@@ -1,24 +1,37 @@
 # -*- coding: utf8 -*-
 
 import os
+import djcelery
 
-import environ
+# import environ
+# root = environ.Path(__file__) - 2
+# env = environ.Env(DEBUG=(bool, False))
+# environ.Env.read_env()
+from datetime import timedelta
+import djcelery
+djcelery.setup_loader()
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+SECRET_KEY = 'my_santa'# env.str('SECRET_KEY', 'my-santa-claus')
 
-root = environ.Path(__file__) - 2
-env = environ.Env(DEBUG=(bool, False))
-environ.Env.read_env()
+DEBUG = True
 
-BASE_DIR = str(root)
-SECRET_KEY = env.str('SECRET_KEY', 'my-santa-claus')
-
-DEBUG = env.bool('DEBUG', True)
-
-ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=[])
+# ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=[])
 KINOHOD_API_KEY='f056d104-abcd-3ab7-9132-cfcf3a098bc4'
 
 # Application definition
+BROKER_URL = 'django://'
+CELERYBEAT_SCHEDULER = 'djcelery.schedulers.DatabaseScheduler'
+
+CELERYBEAT_SCHEDULE = {
+    'update-every-30-seconds': {
+        'task': 'update_chat',
+        'schedule': timedelta(seconds=30),
+    },
+}
 
 INSTALLED_APPS = [
+    'djcelery',
+    'kombu.transport.django',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -90,7 +103,7 @@ USE_TZ = True
 STATIC_URL = '/static/'
 
 
-TELEGRAM_BOT_TOKEN = env.str('TELEGRAM_BOT_TOKEN', 'test')
+TELEGRAM_BOT_TOKEN = '220697123:AAEBdacDOFAIIWUASAzCCfMStBcMmGz7PO0'
 
 
 LOGGING = {
