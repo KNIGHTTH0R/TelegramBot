@@ -7,8 +7,15 @@ import djcelery
 # root = environ.Path(__file__) - 2
 # env = environ.Env(DEBUG=(bool, False))
 # environ.Env.read_env()
+
 from datetime import timedelta
 import djcelery
+
+djcelery.setup_loader()
+
+CELERY_ALWAYS_EAGER=False
+BROKER_BACKEND = "djkombu.transport.DatabaseTransport"
+
 djcelery.setup_loader()
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = 'my_santa'# env.str('SECRET_KEY', 'my-santa-claus')
@@ -17,6 +24,11 @@ DEBUG = True
 
 # ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=[])
 KINOHOD_API_KEY='f056d104-abcd-3ab7-9132-cfcf3a098bc4'
+DJANGO_SETTINGS_MODULE = "login_proj.settings"
+
+# CELERY_IMPORTS = ('telegram_bot',)
+# BROKER_URL = 'amqp://guest:guest@localhost:5672//'
+# CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
 
 # Application definition
 BROKER_URL = 'django://'
@@ -30,7 +42,9 @@ CELERYBEAT_SCHEDULE = {
 }
 
 INSTALLED_APPS = [
+    'telegram_bot',
     'djcelery',
+    'djkombu',
     'kombu.transport.django',
     'django.contrib.admin',
     'django.contrib.auth',
