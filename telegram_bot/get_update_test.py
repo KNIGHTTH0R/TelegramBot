@@ -18,7 +18,7 @@ import time
 from django.conf import settings
 
 from telepot.namedtuple import InlineKeyboardMarkup
-
+import urllib
 import urllib2
 
 import tempfile
@@ -234,7 +234,7 @@ def _display_cinema_seances(cinema_id, movie_id):
 
 
 def post():
-    LAST_UPDATE = 188027601
+    LAST_UPDATE = 188027632
     while True:
         time.sleep(1)
         updates = TelegramBot.getUpdates(offset=LAST_UPDATE)
@@ -273,18 +273,19 @@ def post():
                         chat_id,
                         ('hall.bmp', hall_image)
                     )
+                    city_name_dict = {'cityName': u'Москва'.encode('utf-8')}
+                    url_encoded_dict = urllib.urlencode(city_name_dict)
                     markup = InlineKeyboardMarkup(inline_keyboard=[
                         [dict(text='Купить билеты',
-                              url=('https://kinohod.ru/widget/?cityName={}'
-                                   '#scheme_{}'.format(u'Москва'.
-                                                       encode('utf-8'),
-                                                       schedule_id))),
-                         ],
+                              url=('https://kinohod.ru/widget/?{}'
+                                   '#scheme_{}'.format(url_encoded_dict,
+                                                       schedule_id)))],
                     ])
                     TelegramBot.sendMessage(
                         chat_id,
                         'Серые - занято. Синие - свободно.',
-                        reply_markup=markup,)
+                        reply_markup=markup,
+                        parse_mode='Markdown')
                 except:
                     TelegramBot.sendMessage(
                         chat_id,
