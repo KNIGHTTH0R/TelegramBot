@@ -14,9 +14,7 @@ from PIL import ImageDraw
 from StringIO import StringIO
 from django.http import (HttpResponseForbidden, HttpResponseBadRequest,
                          JsonResponse)
-from django.views.generic import View
-from django.views.decorators.csrf import csrf_exempt
-from django.utils.decorators import method_decorator
+import time
 from django.conf import settings
 
 from telepot.namedtuple import InlineKeyboardMarkup
@@ -25,10 +23,13 @@ import urllib2
 
 import tempfile
 
-from telegram_bot.settings import KINOHOD_API_KEY
+KINOHOD_API_KEY='f056d104-abcd-3ab7-9132-cfcf3a098bc4'
+TELEGRAM_BOT_TOKEN='220697123:AAEBdacDOFAIIWUASAzCCfMStBcMmGz7PO0'
 
-TelegramBot = telepot.Bot(settings.TELEGRAM_BOT_TOKEN)
+TelegramBot = telepot.Bot(TELEGRAM_BOT_TOKEN)
 logger = logging.getLogger('telegram.bot')
+
+
 
 
 def _display_help():
@@ -128,7 +129,7 @@ def _display_movie_info(movie_id):
 
 def _display_seances(movie_id):
     url = ('https://kinohod.ru/api/rest/partner/v1/movies/{}/schedules?'
-           'apikey={}&limit=20'.format(str(movie_id), KINOHOD_API_KEY))
+           'apikey={}&limit=30'.format(str(movie_id), KINOHOD_API_KEY))
     context = ssl._create_unverified_context()
     html_data = json.loads(urllib2.urlopen(url, context=context).read())
     response = '*Кинотеатры* \n'
@@ -169,30 +170,40 @@ def _draw_cinemahall(schedule_id):
                 seat_height = seat['height']
                 seat_width = seat['width']
                 if seat['status'] == 'vacant':
-                    data[y - seat_height/2: y+seat_height/2,
-                         x - seat_width/2: x+seat_width/2] = [1, 137, 243]
+                    if seat['class'] == 'color1':
+                        data[y - seat_height/2:
+                             y+seat_height/2,
+                             x - seat_width/2:
+                             x+seat_width/2] = [1, 137, 243]
+                    if seat['class'] == 'color2':
+                        data[y - seat_height / 2:
+                             y + seat_height / 2,
+                             x - seat_width / 2:
+                             x + seat_width / 2] = [255, 180, 0]
+
                 else:
-                    data[y - seat_height/2: y + seat_height/2,
-                         x - seat_width/2: x + seat_width/2] = [221,
-                                                                221,
-                                                                221]
+                    data[y - seat_height/2:
+                         y + seat_height/2,
+                         x - seat_width/2:
+                         x + seat_width/2] = [221, 221, 221]
 
             img = smp.toimage(data)
-            draw = ImageDraw.Draw(img)
-            for seat in section['seats']:
-                x = int(seat['x'])
-                seat_width = int(seat['width'])
-                seat_height = int(seat['height'])
-                if int(seat['row']) == 1:
-                    draw.text((x,
-                               int(seat['y']) - seat_height*1.5),
-                              str(seat['number']),
-                              fill=(0, 0, 0, 64))
-                if int(seat['number']) == 1:
-                    draw.text(
-                        (x - seat_width , int(seat['y']) - seat_height/3),
-                        str(seat['row']),
-                        fill=(0, 0, 0, 64))
+            # Нумерация мест
+            # draw = ImageDraw.Draw(img)
+            # for seat in section['seats']:
+            #     x = int(seat['x'])
+            #     seat_width = int(seat['width'])
+            #     seat_height = int(seat['height'])
+            #     if int(seat['row']) == 1:
+            #         draw.text((x,
+            #                    int(seat['y']) - seat_height*1.5),
+            #                   str(seat['number']),
+            #                   fill=(0, 0, 0, 64))
+            #     if int(seat['number']) == 1:
+            #         draw.text(
+            #             (x - seat_width , int(seat['y']) - seat_height/3),
+            #             str(seat['row']),
+            #             fill=(0, 0, 0, 64))
 
     tmpfile = tempfile.TemporaryFile()
     img.save(tmpfile, format='bmp', quality=80)
@@ -222,27 +233,19 @@ def _display_cinema_seances(cinema_id, movie_id):
     return response
 
 
-class CommandReceiveView(View):
-
-    def post(self, request, bot_token):
-        if bot_token != settings.TELEGRAM_BOT_TOKEN:
-            return HttpResponseForbidden('Invalid token')
-
-        commands = {
-            '/start': _display_help,
-            '/movies': _display_running_movies,
-            '/info': _display_movie_info,
-            'help': _display_help,
-        }
-
-        raw = request.body.decode('utf-8')
-        logger.info(raw)
-
-        try:
-            payload = json.loads(raw)
-        except ValueError:
-            return HttpResponseBadRequest('Invalid request body')
-        else:
+def post():
+    LAST_UPDATE = 188027601
+    while True:
+        time.sleep(1)
+        updates = TelegramBot.getUpdates(offset=LAST_UPDATE)
+        for payload in updates:
+            LAST_UPDATE += 1
+            commands = {
+                '/start': _display_help,
+                '/movies': _display_running_movies,
+                '/info': _display_movie_info,
+                'help': _display_help,
+            }
 
             if 'message' in payload:
                 chat_id = payload['message']['chat']['id']
@@ -261,7 +264,6 @@ class CommandReceiveView(View):
                 TelegramBot.answerCallbackQuery(
                     callback_query_id=callback_query_id,
                     text=':)')
-
             elif cmd.startswith('/schedule'):
                 schedule_id = cmd[9:len(cmd)]
                 try:
@@ -282,7 +284,7 @@ class CommandReceiveView(View):
                     TelegramBot.sendMessage(
                         chat_id,
                         'Серые - занято. Синие - свободно.',
-                        reply_markup=markup, )
+                        reply_markup=markup,)
                 except:
                     TelegramBot.sendMessage(
                         chat_id,
@@ -306,21 +308,16 @@ class CommandReceiveView(View):
                     chat_id,
                     response,
                     parse_mode='Markdown')
-
             else:
                 func = commands.get(cmd.split()[0].lower())
                 if func:
                     text = func()
                     TelegramBot.sendMessage(chat_id, text)
-
                 else:
                     TelegramBot.sendMessage(chat_id,
                                             'I do not understand you, Sir!')
 
-        return JsonResponse({}, status=200)
+    return JsonResponse({}, status=200)
 
-    @method_decorator(csrf_exempt)
-    def dispatch(self, request, *args, **kwargs):
-        return super(CommandReceiveView, self).dispatch(request,
-                                                        *args,
-                                                        **kwargs)
+
+post()
