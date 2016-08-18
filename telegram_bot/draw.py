@@ -1,5 +1,6 @@
 # coding: utf-8
 
+import contextlib
 import ssl
 import json
 import tempfile
@@ -67,7 +68,8 @@ def draw_cinemahall(schedule_id):
 
     context = ssl._create_unverified_context()
 
-    html_data = json.loads(urllib2.urlopen(url, context=context).read())
+    with contextlib.closing(urllib2.urlopen(url, context=context)) as jf:
+        html_data = json.loads(jf.read())
 
     for info in html_data:
         for section in info['sections']:

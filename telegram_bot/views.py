@@ -23,6 +23,8 @@ from django.template.loader import render_to_string
 from telepot.namedtuple import InlineKeyboardMarkup
 
 from draw import draw_cinemahall
+
+import botan
 import settings
 
 TelegramBot = telepot.Bot(settings.TELEGRAM_BOT_TOKEN)
@@ -142,7 +144,6 @@ class CommandReceiveView(View):
             '/start': _display_help,
             '/movies': _display_running_movies,
             '/info': _display_movie_info,
-            'help': _display_help,
         }
 
         raw = request.body.decode('utf-8')

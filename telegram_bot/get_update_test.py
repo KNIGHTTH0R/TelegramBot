@@ -20,10 +20,11 @@ from django.template.loader import render_to_string
 from telepot.namedtuple import InlineKeyboardMarkup
 
 from draw import draw_cinemahall
+import botan
 from settings import (TELEGRAM_BOT_TOKEN, KINOHOD_API_KEY, URL_RUNNING_MOVIES,
                       SIGN_PREMIER, SIGN_TIP, SIGN_VIDEO, SIGN_ACTOR, SIGN_MIN,
                       FILMS_TO_DISPLAY, URL_MOVIES_INFO, URL_SEANCES,
-                      URL_CINEMA_SEANCES)
+                      URL_CINEMA_SEANCES, BOTAN_TOKEN)
 
 TelegramBot = telepot.Bot(TELEGRAM_BOT_TOKEN)
 logger = logging.getLogger('telegram.bot')
@@ -164,28 +165,6 @@ def _display_cinema_seances(cinema_id, movie_id):
     return response
 
 
-def _display_cinema_seances(cinema_id, movie_id):
-    url = URL_CINEMA_SEANCES.format(cinema_id, KINOHOD_API_KEY)
-
-    context = ssl._create_unverified_context()
-
-    with contextlib.closing(urllib2.urlopen(url, context=context)) as hd:
-        html_data = json.loads(hd.read())
-
-    f = namedtuple('f', ['tip', 'time', 'minPrice', 'id'])
-    for info in html_data:
-        if int(movie_id) != int(info['movie']['id']):
-            continue
-
-        seances = [f(settings.SIGN_TIP, s['time'], s['minPrice'], s['id'])
-                   for s in info['schedules']]
-
-        return render_to_string(
-            'cinema_seances.md',
-            {'title': info['movie']['title'], 'seances': seances}
-        )
-
-
 def refresh_update(mode='get', last_upd=None):
     with open('UPDATES', 'r+') as rf:
         if mode == 'get':
@@ -224,6 +203,14 @@ def post():
             }
 
             if 'message' in payload:
+
+                botan.track(
+                    BOTAN_TOKEN,
+                    payload['message']['from']['id'],
+                    'typed a msg',
+                    payload['message']['from']['username']
+                )
+
                 chat_id = payload['message']['chat']['id']
                 cmd = payload['message'].get('text')  # command
 
@@ -251,11 +238,17 @@ def post():
                 )
                 city_name_dict = {'cityName': u'Москва'.encode('utf-8')}
                 url_encoded_dict = urllib.urlencode(city_name_dict)
+
+                original_url = 'https://kinohod.ru/widget/?{}#scheme_{}'.format(url_encoded_dict, schedule_id)
+
+                short_url = botan.shorten_url(
+                    original_url,
+                    BOTAN_TOKEN,
+                    payload['message']['from']['id']
+                )
+
                 markup = InlineKeyboardMarkup(inline_keyboard=[
-                    [dict(text='Купить билеты',
-                          url=('https://kinohod.ru/widget/?{}'
-                               '#scheme_{}'.format(url_encoded_dict,
-                                                   schedule_id)))],
+                    [dict(text='Купить билеты', url=short_url)],
                 ])
                 TelegramBot.sendMessage(
                     chat_id,

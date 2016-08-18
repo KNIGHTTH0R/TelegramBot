@@ -16,4 +16,7 @@ logger = logging.getLogger('telegram.bot')
 
 import json
 
-print json.dumps(TelegramBot.getUpdates())
+# print json.dumps(TelegramBot.getUpdates())
+# 'AIzaSyAl5pApPs5pTMSVpajOUq5tgFriIApk28U'
+from pprint import pprint
+pprint(TelegramBot.getUpdates())

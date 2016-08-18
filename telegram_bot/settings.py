@@ -165,6 +165,7 @@ LOGGING = {
 
 KINOHOD_API_KEY = 'f056d104-abcd-3ab7-9132-cfcf3a098bc4'
 TELEGRAM_BOT_TOKEN = '220697123:AAEFcaCsvNkAHpz9QKooGJjlGKAmPUL1SAc'
+BOTAN_TOKEN = 'ip2CSBT89XNqLbzAjcaF4vw6Iyc9LJIx'
 
 URL_RUNNING_MOVIES = 'https://api.kinohod.ru/api/data/2/{}/running.json.gz'
 URL_MOVIES_INFO = 'https://kinohod.ru/api/rest/partner/v1/movies/{}?apikey={}'
