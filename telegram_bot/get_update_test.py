@@ -1,43 +1,39 @@
 # -*- coding: utf8 -*-
+
+import contextlib
 import gzip
 import json
 import logging
 import ssl
-
-import datetime
-from rexec import FileWrapper
-
-import numpy as np
-import scipy.misc as smp
-import telepot
-from PIL import ImageDraw
-from StringIO import StringIO
-from django.http import (HttpResponseForbidden, HttpResponseBadRequest,
-                         JsonResponse)
 import time
-from django.conf import settings
-
-from telepot.namedtuple import InlineKeyboardMarkup
 import urllib
 import urllib2
 
-import tempfile
+from collections import namedtuple
+from datetime import datetime
+from StringIO import StringIO
 
-KINOHOD_API_KEY='f056d104-abcd-3ab7-9132-cfcf3a098bc4'
-TELEGRAM_BOT_TOKEN='220697123:AAEBdacDOFAIIWUASAzCCfMStBcMmGz7PO0'
+import telepot
+
+from django.http import JsonResponse
+from django.template.loader import render_to_string
+from telepot.namedtuple import InlineKeyboardMarkup
+
+from draw import draw_cinemahall
+from settings import (TELEGRAM_BOT_TOKEN, KINOHOD_API_KEY, URL_RUNNING_MOVIES,
+                      SIGN_PREMIER, SIGN_TIP, SIGN_VIDEO, SIGN_ACTOR, SIGN_MIN,
+                      FILMS_TO_DISPLAY, URL_MOVIES_INFO, URL_SEANCES,
+                      URL_CINEMA_SEANCES)
 
 TelegramBot = telepot.Bot(TELEGRAM_BOT_TOKEN)
 logger = logging.getLogger('telegram.bot')
-
-
-
+Row = namedtuple('Row', ['title', 'link'])
 
 def _display_help():
-    markup = InlineKeyboardMarkup(inline_keyboard=[
+    markup = telepot.namedtuple.InlineKeyboardMarkup(inline_keyboard=[
             [dict(text='Telegram URL', url='https://core.telegram.org/'),
              dict(text='Yandex URL', url='https://yandex.ru/')],
         ])
-
     return markup
 
 
@@ -57,9 +53,9 @@ def _display_running_movies():
         movie = data[looper]
         info_row = '{} (/info{})'.format(movie['title'].encode('utf-8'),
                                          str(movie['id']))
-        if (datetime.datetime.strptime(movie['premiereDateRussia'],
+        if (datetime.strptime(movie['premiereDateRussia'],
                                        "%Y-%m-%d") >
-                datetime.datetime.now()):
+                datetime.now()):
             premiers += '\xE2\x9C\x94' + info_row + '\n'
             have_premiers = True
         else:
@@ -129,7 +125,7 @@ def _display_movie_info(movie_id):
 
 def _display_seances(movie_id):
     url = ('https://kinohod.ru/api/rest/partner/v1/movies/{}/schedules?'
-           'apikey={}&limit=30'.format(str(movie_id), KINOHOD_API_KEY))
+           'apikey={}&limit=20'.format(str(movie_id), KINOHOD_API_KEY))
     context = ssl._create_unverified_context()
     html_data = json.loads(urllib2.urlopen(url, context=context).read())
     response = '*Кинотеатры* \n'
@@ -145,71 +141,6 @@ def _display_seances(movie_id):
     if not have_seances:
         response += 'Сегодня фильма ещё нет в прокате.'
     return response
-
-
-def _draw_cinemahall(schedule_id):
-    url = ('https://kinohod.ru/api/rest/partner/v1/schedules/{}/'
-           'hallscheme?apikey=f056d104-abcd-3ab7-9132-cfcf3a098bc4&'
-           'limit=20'.format(schedule_id))
-
-    context = ssl._create_unverified_context()
-    html_data = json.loads(urllib2.urlopen(url, context=context).read())
-    shift = 10
-    for info in html_data:
-        for section in info['sections']:
-            picture_width = section['width']
-            picture_height = section['height']
-            data = np.zeros((picture_height,
-                             picture_width,
-                             3),
-                            dtype=np.uint8)
-            data[:, :] = [242, 242, 242]
-            for seat in section['seats']:
-                x = int(seat['x']) + shift/2
-                y = int(seat['y'])
-                seat_height = seat['height']
-                seat_width = seat['width']
-                if seat['status'] == 'vacant':
-                    if seat['class'] == 'color1':
-                        data[y - seat_height/2:
-                             y+seat_height/2,
-                             x - seat_width/2:
-                             x+seat_width/2] = [1, 137, 243]
-                    if seat['class'] == 'color2':
-                        data[y - seat_height / 2:
-                             y + seat_height / 2,
-                             x - seat_width / 2:
-                             x + seat_width / 2] = [255, 180, 0]
-
-                else:
-                    data[y - seat_height/2:
-                         y + seat_height/2,
-                         x - seat_width/2:
-                         x + seat_width/2] = [221, 221, 221]
-
-            img = smp.toimage(data)
-            # Нумерация мест
-            # draw = ImageDraw.Draw(img)
-            # for seat in section['seats']:
-            #     x = int(seat['x'])
-            #     seat_width = int(seat['width'])
-            #     seat_height = int(seat['height'])
-            #     if int(seat['row']) == 1:
-            #         draw.text((x,
-            #                    int(seat['y']) - seat_height*1.5),
-            #                   str(seat['number']),
-            #                   fill=(0, 0, 0, 64))
-            #     if int(seat['number']) == 1:
-            #         draw.text(
-            #             (x - seat_width , int(seat['y']) - seat_height/3),
-            #             str(seat['row']),
-            #             fill=(0, 0, 0, 64))
-
-    tmpfile = tempfile.TemporaryFile()
-    img.save(tmpfile, format='bmp', quality=80)
-    tmpfile.seek(0)
-    wrapper = FileWrapper(tmpfile)
-    return wrapper
 
 
 def _display_cinema_seances(cinema_id, movie_id):
@@ -233,8 +164,53 @@ def _display_cinema_seances(cinema_id, movie_id):
     return response
 
 
+def _display_cinema_seances(cinema_id, movie_id):
+    url = URL_CINEMA_SEANCES.format(cinema_id, KINOHOD_API_KEY)
+
+    context = ssl._create_unverified_context()
+
+    with contextlib.closing(urllib2.urlopen(url, context=context)) as hd:
+        html_data = json.loads(hd.read())
+
+    f = namedtuple('f', ['tip', 'time', 'minPrice', 'id'])
+    for info in html_data:
+        if int(movie_id) != int(info['movie']['id']):
+            continue
+
+        seances = [f(settings.SIGN_TIP, s['time'], s['minPrice'], s['id'])
+                   for s in info['schedules']]
+
+        return render_to_string(
+            'cinema_seances.md',
+            {'title': info['movie']['title'], 'seances': seances}
+        )
+
+
+def refresh_update(mode='get', last_upd=None):
+    with open('UPDATES', 'r+') as rf:
+        if mode == 'get':
+            return int(rf.readline().split('=')[-1])
+        else:
+            rf.readline()
+            rf.seek(0)
+            rf.write('LAST_UPDATE={}'.format(last_upd if last_upd else 0))
+            rf.truncate()
+
+
 def post():
-    LAST_UPDATE = 188027632
+
+    def get_last_update():
+        try:
+            updates = TelegramBot.getUpdates()
+            if isinstance(updates, list):
+                updates = updates[-1]
+            last_upd = updates['update_id']
+        except Exception as e:
+            logging.debug(e.message)
+            last_upd = refresh_update(mode='get')
+        return last_upd
+
+    LAST_UPDATE = get_last_update()
     while True:
         time.sleep(1)
         updates = TelegramBot.getUpdates(offset=LAST_UPDATE)
@@ -266,30 +242,30 @@ def post():
                     text=':)')
             elif cmd.startswith('/schedule'):
                 schedule_id = cmd[9:len(cmd)]
-                try:
-                    hall_image = _draw_cinemahall(schedule_id)
-                    TelegramBot.sendChatAction(chat_id, 'upload_photo')
-                    TelegramBot.sendPhoto(
-                        chat_id,
-                        ('hall.bmp', hall_image)
-                    )
-                    city_name_dict = {'cityName': u'Москва'.encode('utf-8')}
-                    url_encoded_dict = urllib.urlencode(city_name_dict)
-                    markup = InlineKeyboardMarkup(inline_keyboard=[
-                        [dict(text='Купить билеты',
-                              url=('https://kinohod.ru/widget/?{}'
-                                   '#scheme_{}'.format(url_encoded_dict,
-                                                       schedule_id)))],
-                    ])
-                    TelegramBot.sendMessage(
-                        chat_id,
-                        'Серые - занято. Синие - свободно.',
-                        reply_markup=markup,
-                        parse_mode='Markdown')
-                except:
-                    TelegramBot.sendMessage(
-                        chat_id,
-                        'Увы, сервер недоступен.')
+                # try:
+                hall_image = draw_cinemahall(schedule_id)
+                TelegramBot.sendChatAction(chat_id, 'upload_photo')
+                TelegramBot.sendPhoto(
+                    chat_id,
+                    ('hall.bmp', hall_image)
+                )
+                city_name_dict = {'cityName': u'Москва'.encode('utf-8')}
+                url_encoded_dict = urllib.urlencode(city_name_dict)
+                markup = InlineKeyboardMarkup(inline_keyboard=[
+                    [dict(text='Купить билеты',
+                          url=('https://kinohod.ru/widget/?{}'
+                               '#scheme_{}'.format(url_encoded_dict,
+                                                   schedule_id)))],
+                ])
+                TelegramBot.sendMessage(
+                    chat_id,
+                    'Выберите места в зале',
+                    reply_markup=markup,
+                    parse_mode='Markdown')
+                # except:
+                #     TelegramBot.sendMessage(
+                #         chat_id,
+                #         'Увы, сервер недоступен.')
 
             elif cmd.startswith('/info'):
                 movie_id = cmd[5:len(cmd)]
@@ -303,7 +279,7 @@ def post():
             elif cmd.startswith('/c'):
                 index_of_m = cmd.index('m')
                 cinema_id = cmd[2:index_of_m]
-                movie_id = cmd[index_of_m+1:len(cmd)]
+                movie_id = cmd[index_of_m + 1:len(cmd)]
                 response = _display_cinema_seances(cinema_id, movie_id)
                 TelegramBot.sendMessage(
                     chat_id,
@@ -318,6 +294,7 @@ def post():
                     TelegramBot.sendMessage(chat_id,
                                             'I do not understand you, Sir!')
 
+            refresh_update('upd', LAST_UPDATE)
     return JsonResponse({}, status=200)
 
 

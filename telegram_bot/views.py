@@ -1,226 +1,135 @@
 # -*- coding: utf8 -*-
+
+import contextlib
 import gzip
 import json
 import logging
 import ssl
-
-import datetime
-from rexec import FileWrapper
-
-import numpy as np
-import scipy.misc as smp
-import telepot
-from PIL import ImageDraw
-from StringIO import StringIO
-from django.http import (HttpResponseForbidden, HttpResponseBadRequest,
-                         JsonResponse)
-from django.views.generic import View
-from django.views.decorators.csrf import csrf_exempt
-from django.utils.decorators import method_decorator
-from django.conf import settings
-
-from telepot.namedtuple import InlineKeyboardMarkup
-
 import urllib
 import urllib2
 
-import tempfile
+from collections import namedtuple
+from datetime import datetime
+from StringIO import StringIO
 
-from telegram_bot.settings import KINOHOD_API_KEY
+import telepot
+
+from django.http import (JsonResponse, HttpResponseForbidden,
+                         HttpResponseBadRequest)
+from django.utils.decorators import method_decorator
+from django.views.generic import View
+from django.views.decorators.csrf import csrf_exempt
+from django.template.loader import render_to_string
+from telepot.namedtuple import InlineKeyboardMarkup
+
+from draw import draw_cinemahall
+import settings
 
 TelegramBot = telepot.Bot(settings.TELEGRAM_BOT_TOKEN)
 logger = logging.getLogger('telegram.bot')
+Row = namedtuple('Row', ['title', 'link'])
 
 
 def _display_help():
-    markup = InlineKeyboardMarkup(inline_keyboard=[
-            [dict(text='Telegram URL', url='https://core.telegram.org/'),
-             dict(text='Yandex URL', url='https://yandex.ru/')],
-        ])
-
-    return markup
+    return render_to_string('help.md', {'help': settings.SIGN_SMILE_HELP})
 
 
 def _display_running_movies():
-    url = ('https://api.kinohod.ru/api/data/2/{}/running.json.gz'.
-           format(KINOHOD_API_KEY))
-    context = ssl._create_unverified_context()
-    json_data = urllib2.urlopen(url, context=context).read()
-    m_stream = gzip.GzipFile(fileobj=StringIO(json_data), mode='rb')
-    data = json.loads(m_stream.read())
-    m_stream.close()
-    premiers = '\xF0\x9F\x8E\xAC Премьеры этой недели: \n'
-    response = '\xF0\x9F\x8E\xA5 Фильмы в прокате: \n'
-    looper = 0
-    have_premiers = False
-    while looper < 10:
-        movie = data[looper]
-        info_row = '{} (/info{})'.format(movie['title'].encode('utf-8'),
-                                         str(movie['id']))
-        if (datetime.datetime.strptime(movie['premiereDateRussia'],
-                                       "%Y-%m-%d") >
-                datetime.datetime.now()):
-            premiers += '\xE2\x9C\x94' + info_row + '\n'
-            have_premiers = True
+    url = settings.URL_RUNNING_MOVIES.format(settings.KINOHOD_API_KEY)
+
+    context = ssl._create_unverified_context()  # need to fix it
+
+    with contextlib.closing(urllib2.urlopen(url, context=context)) as jf:
+        m_stream = gzip.GzipFile(fileobj=StringIO(jf.read()), mode='rb')
+        data = json.loads(m_stream.read())
+
+    videos, premiers = [], []
+    for film_counter in xrange(settings.FILMS_TO_DISPLAY):
+        movie = data[film_counter]
+        f_info = Row(movie['title'].encode('utf-8'), movie['id'])
+
+        prem_date = datetime.strptime(movie['premiereDateRussia'], "%Y-%m-%d")
+        if prem_date > datetime.now():
+            premiers.append(f_info)
         else:
-            response += '\xE2\x9C\x94' + info_row + '\n'
-        looper += 1
-    if have_premiers:
-        response += premiers
-    return response
+            videos.append(f_info)
+
+    return render_to_string('running_movies.md',
+                            {'videos': videos, 'premiers': premiers,
+                             'sign_video': settings.SIGN_VIDEO,
+                             'sign_tip': settings.SIGN_TIP,
+                             'sign_premier': settings.SIGN_PREMIER})
 
 
 def _display_movie_info(movie_id):
-    url = ('https://kinohod.ru/api/rest/partner/v1/movies/{}?apikey={}'.
-           format(str(movie_id), KINOHOD_API_KEY))
+
+    def get_data(name):
+        return ', '.join([a.encode('utf-8') for a in html_data[name]])
+
+    url = settings.URL_MOVIES_INFO.format(movie_id, settings.KINOHOD_API_KEY)
+
     context = ssl._create_unverified_context()
-    html_data = json.loads(urllib2.urlopen(url, context=context).read())
 
-    movie_id = str(html_data['id'])
+    with contextlib.closing(urllib2.urlopen(url, context=context)) as jf:
+        html_data = json.loads(jf.read())
 
-    actors = html_data['actors']
-    actors_str = '\xF0\x9F\x91\xA4 *Актёры*: '
-    for actor in actors:
-        actors_str += actor.encode('utf-8') + ', '
-    actors_str = actors_str[: -2]
-    actors_str += '\n'
+    markup = InlineKeyboardMarkup(inline_keyboard=[[
+        dict(text='IMDB', url=settings.URL_IMDB.format(html_data['imdb_id'])),
+        dict(text=settings.CHOOSE_SEANCE,
+             callback_data=('/seance{}'.format(html_data['id'])))
+    ]])
 
-    duration = ('*Продолжительность:* ' +
-                str(html_data['duration']) +
-                'мин.' '\n')
-
-    genres = html_data['genres']
-    genres_str = '*Жанры*: '
-    for genre in genres:
-        genres_str += genre.encode('utf-8') + ', '
-    genres_str = genres_str[: -2]
-    genres_str += '\n'
-
-    producers = html_data['producers']
-    producers_str = '*Продюсеры:* '
-    for producer in producers:
-        producers_str += producer.encode('utf-8') + ', '
-    producers_str = producers_str[: -2]
-    producers_str += '\n'
-
-    directors = html_data['directors']
-    directors_str = '*Режисёры:* '
-    for director in directors:
-        directors_str += director.encode('utf-8') + ', '
-    directors_str = directors_str[: -2]
-    directors_str += '\n'
-
-    title = '*' + html_data['title'].encode('utf-8') + '*' + '\n'
-    imdb_id = str(html_data['imdb_id'])
-
-    annotation = html_data['annotationFull'].encode('utf-8') + '\n'
-
-    message = (title + annotation + duration +
-               genres_str + actors_str +
-               producers_str + directors_str)
-
-    markup = InlineKeyboardMarkup(inline_keyboard=[
-        [dict(text='IMDB', url='http://www.imdb.com/title/tt' + str(imdb_id)),
-         dict(text='Выбрать сеанс', callback_data = ('/seance' + movie_id))]
-    ])
-
-    return message, markup
+    return render_to_string('movies_info.md', {
+        'title': html_data['title'].encode('utf-8'),
+        'description': html_data['annotationFull'].encode('utf-8'),
+        'duration': '{} {}'.format(html_data['duration'], settings.SIGN_MIN),
+        'genres': get_data('genres'),
+        'sign_actor': settings.SIGN_ACTOR,
+        'actors': get_data('actors'),
+        'producers': get_data('producers'),
+        'directors': get_data('directors')
+    }), markup
 
 
 def _display_seances(movie_id):
-    url = ('https://kinohod.ru/api/rest/partner/v1/movies/{}/schedules?'
-           'apikey={}&limit=20'.format(str(movie_id), KINOHOD_API_KEY))
-    context = ssl._create_unverified_context()
-    html_data = json.loads(urllib2.urlopen(url, context=context).read())
-    response = '*Кинотеатры* \n'
-    have_seances = False
-    for info in html_data:
-        have_seances = True
-        cinema = info['cinema']
-        movie_id = info['movie']['id']
-        row = ('{} (/c{}m{})\n'.format(cinema['shortTitle'].encode('utf-8'),
-                                       str(cinema['id']), str(movie_id)))
-
-        response += row
-    if not have_seances:
-        response += 'Сегодня фильма ещё нет в прокате.'
-    return response
-
-
-def _draw_cinemahall(schedule_id):
-    url = ('https://kinohod.ru/api/rest/partner/v1/schedules/{}/'
-           'hallscheme?apikey=f056d104-abcd-3ab7-9132-cfcf3a098bc4&'
-           'limit=20'.format(schedule_id))
+    url = settings.URL_SEANCES.format(movie_id, settings.KINOHOD_API_KEY)
 
     context = ssl._create_unverified_context()
-    html_data = json.loads(urllib2.urlopen(url, context=context).read())
-    shift = 10
+
+    with contextlib.closing(urllib2.urlopen(url, context=context)) as jf:
+        html_data = json.loads(jf.read())
+
     for info in html_data:
-        for section in info['sections']:
-            picture_width = section['width']
-            picture_height = section['height']
-            data = np.zeros((picture_height,
-                             picture_width,
-                             3),
-                            dtype=np.uint8)
-            data[:, :] = [242, 242, 242]
-            for seat in section['seats']:
-                x = int(seat['x']) + shift/2
-                y = int(seat['y'])
-                seat_height = seat['height']
-                seat_width = seat['width']
-                if seat['status'] == 'vacant':
-                    data[y - seat_height/2: y+seat_height/2,
-                         x - seat_width/2: x+seat_width/2] = [1, 137, 243]
-                else:
-                    data[y - seat_height/2: y + seat_height/2,
-                         x - seat_width/2: x + seat_width/2] = [221,
-                                                                221,
-                                                                221]
+        Row(info['cinema']['shortTitle'].encode('utf-8'),
+            '(/c{}m{})'.format(info['cinema']['id'], info['movie']['id']))
 
-            img = smp.toimage(data)
-            draw = ImageDraw.Draw(img)
-            for seat in section['seats']:
-                x = int(seat['x'])
-                seat_width = int(seat['width'])
-                seat_height = int(seat['height'])
-                if int(seat['row']) == 1:
-                    draw.text((x,
-                               int(seat['y']) - seat_height*1.5),
-                              str(seat['number']),
-                              fill=(0, 0, 0, 64))
-                if int(seat['number']) == 1:
-                    draw.text(
-                        (x - seat_width , int(seat['y']) - seat_height/3),
-                        str(seat['row']),
-                        fill=(0, 0, 0, 64))
-
-    tmpfile = tempfile.TemporaryFile()
-    img.save(tmpfile, format='bmp', quality=80)
-    tmpfile.seek(0)
-    wrapper = FileWrapper(tmpfile)
-    return wrapper
+    if not html_data:
+        render_to_string('no_seances.md')
+    return render_to_string('seances.md', {})
 
 
 def _display_cinema_seances(cinema_id, movie_id):
-    url = ('https://kinohod.ru/api/rest/partner/v1/cinemas/{}/schedules?'
-           'apikey={}&limit=10'.format(str(cinema_id), KINOHOD_API_KEY))
+    url = settings.URL_CINEMA_SEANCES.format(
+        cinema_id, settings.KINOHOD_API_KEY
+    )
+
     context = ssl._create_unverified_context()
-    html_data = json.loads(urllib2.urlopen(url, context=context).read())
+
+    with contextlib.closing(urllib2.urlopen(url, context=context)) as hd:
+        html_data = json.loads(hd.read())
+
+    f = namedtuple('f', ['tip', 'time', 'minPrice', 'id'])
     for info in html_data:
-        schedule_movie_id = info['movie']['id']
-        movie_name = info['movie']['title']
-        if int(movie_id) != int(schedule_movie_id):
+        if int(movie_id) != int(info['movie']['id']):
             continue
-        schedules = info['schedules']
-        response = '*Сеансы: *' + movie_name.encode('utf-8') + '\n'
-        for seance in schedules:
-            row = ('\xE2\x8C\x9A {} от {}руб. (/schedule{})\n'.
-                   format(str(seance['time']),
-                          str(seance['minPrice']),
-                          str(seance['id'])))
-            response += row
-    return response
+
+        seances = [f(settings.SIGN_TIP, s['time'], s['minPrice'], s['id'])
+                   for s in info['schedules']]
+
+        return render_to_string(
+            'cinema_seances.md',
+            {'title': info['movie']['title'], 'seances': seances}
+        )
 
 
 class CommandReceiveView(View):
@@ -266,7 +175,7 @@ class CommandReceiveView(View):
             elif cmd.startswith('/schedule'):
                 schedule_id = cmd[9:len(cmd)]
                 try:
-                    hall_image = _draw_cinemahall(schedule_id)
+                    hall_image = draw_cinemahall(schedule_id)
                     TelegramBot.sendChatAction(chat_id, 'upload_photo')
                     TelegramBot.sendPhoto(
                         chat_id,
@@ -322,6 +231,5 @@ class CommandReceiveView(View):
 
     @method_decorator(csrf_exempt)
     def dispatch(self, request, *args, **kwargs):
-        return super(CommandReceiveView, self).dispatch(request,
-                                                        *args,
+        return super(CommandReceiveView, self).dispatch(request, *args,
                                                         **kwargs)

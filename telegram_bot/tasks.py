@@ -1,6 +1,10 @@
+# coding: utf-8
+
 import telepot
+
 from telegram_bot import settings
 from telegram_bot.celery import app
+
 TelegramBot = telepot.Bot(settings.TELEGRAM_BOT_TOKEN)
 
 

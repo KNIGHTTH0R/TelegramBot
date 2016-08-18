@@ -1,6 +1,10 @@
-*Hello!*
+*Здравствуйте*
+Вас приветсвует бот Кинохода.
+Наш бот - отличный помощник при:
+{{ help }} Выборе фильма к просмотру в кинотеатре
+{{ help }} Подборе подходящего Вам сеанса
+{{ help }} Отслеживании премьер.
 
-I am bot which can show you latest 10 news from Planet Python website :)
 
-Available commands:
-*feed* - lists 10 recent Planet Python posts
+Команда /movies - расскажет о фильмах в прокате.
+Начните использование бота с неё

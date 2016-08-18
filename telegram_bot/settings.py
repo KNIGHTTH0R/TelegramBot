@@ -1,7 +1,8 @@
-# -*- coding: utf8 -*-
+# coding: utf8
+# noqa: flake8
 
 import os
-import djcelery
+# import djcelery
 
 # import environ
 # root = environ.Path(__file__) - 2
@@ -9,21 +10,19 @@ import djcelery
 # environ.Env.read_env()
 
 from datetime import timedelta
-import djcelery
 
-djcelery.setup_loader()
+# djcelery.setup_loader()
 
-CELERY_ALWAYS_EAGER=False
-BROKER_BACKEND = "djkombu.transport.DatabaseTransport"
+# CELERY_ALWAYS_EAGER=False
+# BROKER_BACKEND = "djkombu.transport.DatabaseTransport"
 
-djcelery.setup_loader()
+# djcelery.setup_loader()
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = 'my_santa'# env.str('SECRET_KEY', 'my-santa-claus')
 
 DEBUG = True
 
 # ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=[])
-KINOHOD_API_KEY='f056d104-abcd-3ab7-9132-cfcf3a098bc4'
 DJANGO_SETTINGS_MODULE = "login_proj.settings"
 
 # CELERY_IMPORTS = ('telegram_bot',)
@@ -32,7 +31,7 @@ DJANGO_SETTINGS_MODULE = "login_proj.settings"
 
 # Application definition
 BROKER_URL = 'django://'
-CELERYBEAT_SCHEDULER = 'djcelery.schedulers.DatabaseScheduler'
+# CELERYBEAT_SCHEDULER = 'djcelery.schedulers.DatabaseScheduler'
 
 CELERYBEAT_SCHEDULE = {
     'update-every-30-seconds': {
@@ -43,9 +42,9 @@ CELERYBEAT_SCHEDULE = {
 
 INSTALLED_APPS = [
     'telegram_bot',
-    'djcelery',
-    'djkombu',
-    'kombu.transport.django',
+    # 'djcelery',
+    # 'djkombu',
+    # 'kombu.transport.django',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -117,9 +116,6 @@ USE_TZ = True
 STATIC_URL = '/static/'
 
 
-TELEGRAM_BOT_TOKEN = '220697123:AAEBdacDOFAIIWUASAzCCfMStBcMmGz7PO0'
-
-
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': True,
@@ -166,3 +162,28 @@ LOGGING = {
         },
     }
 }
+
+KINOHOD_API_KEY = 'f056d104-abcd-3ab7-9132-cfcf3a098bc4'
+TELEGRAM_BOT_TOKEN = '220697123:AAEFcaCsvNkAHpz9QKooGJjlGKAmPUL1SAc'
+
+URL_RUNNING_MOVIES = 'https://api.kinohod.ru/api/data/2/{}/running.json.gz'
+URL_MOVIES_INFO = 'https://kinohod.ru/api/rest/partner/v1/movies/{}?apikey={}'
+URL_SEANCES = 'https://kinohod.ru/api/rest/partner/v1/movies/{}/schedules?apikey={}&limit=30'
+URL_CINEMA_SEANCES = 'https://kinohod.ru/api/rest/partner/v1/cinemas/{}/schedules?apikey={}&limit=10'
+URL_IMDB = 'http://www.imdb.com/title/tt{}'
+
+SIGN_VIDEO = '\xF0\x9F\x8E\xA5'
+SIGN_PREMIER = '\xF0\x9F\x8E\xAC'
+SIGN_TIP = '\xE2\x9C\x94'
+SIGN_ACTOR = '\xF0\x9F\x91\xA4'
+SIGN_NEW_ROW = '\n'
+SIGN_SMILE_HELP = '\xE2\x96\xAA'
+
+
+FILMS_TO_DISPLAY = 10
+
+
+CINEMA_HALL = 'https://kinohod.ru/api/rest/partner/v1/schedules/{}/hallscheme?apikey={}&limit=20'
+SIGN_RUB = 'P'
+SIGN_MIN = 'мин.'
+CHOOSE_SEANCE = 'Выбрать сеанс'
