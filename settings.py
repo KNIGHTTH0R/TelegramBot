@@ -44,12 +44,22 @@ URL_IMDB = 'http://www.imdb.com/title/tt{}'
 URL_BASE_O = 'https://kinohod.ru/o/'
 URL_WIDGET_CINEMAS = 'http://kinohod.ru/widget/cinemas'
 
+FILMS_TO_DISPLAY = 10
+CINEMAS_TO_DISPLAY = 10
+SEANCES_TO_DISPLAY = 10
+
+TODAY = 0
+TOMORROW = 1
+A_TOMORROW = 2
+
+
 SIGN_VIDEO = '\xF0\x9F\x8E\xA5'.decode('utf-8')
 SIGN_PREMIER = '\xF0\x9F\x8E\xAC'.decode('utf-8')
 SIGN_TIP = '\xE2\x9C\x94'.decode('utf-8')
 SIGN_ACTOR = unicode('\xF0\x9F\x91\xA4', encoding='utf-8')  # .decode('utf-8')
 SIGN_NEW_ROW = '\n'.decode('utf-8')
 SIGN_SMILE_HELP = '\xE2\x96\xAA'.decode('utf-8')
+
 
 
 SIGN_RUB = 'P'
@@ -128,13 +138,5 @@ NO_MAIL_SENDED = 'Письма все еще нет'
 NEED_CONTACT = 'Мы взяли Ваш запрос в обработку и свяжемся с Вами в самое ближайшее время'
 PAY_ERROR = 'Какая ошибка появилась на сайте/в приложении?'
 
-
 SUPPORT_INFO = 'Обращение в службу поддержки'
 
-FILMS_TO_DISPLAY = 10
-CINEMAS_TO_DISPLAY = 10
-SEANCES_TO_DISPLAY = 10
-
-TODAY = 0
-TOMORROW = 1
-A_TOMORROW = 2
