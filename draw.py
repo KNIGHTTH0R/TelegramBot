@@ -84,10 +84,6 @@ def draw_cinemahall(schedule_id):
             for counter, seat in enumerate(section['seats']):
                 x, y = (int(seat['x']) + x_offset + shift / 2,
                         int(seat['y']) + y_offset)
-                if counter == 1:
-                    low_price_x = x
-                elif counter == 5:
-                    high_price_x = x
 
                 seat_height, seat_width = (int(seat['height']),
                                            int(seat['width']))
@@ -108,33 +104,35 @@ def draw_cinemahall(schedule_id):
                          x - seat_width/2: x + seat_width/2] = LIGHT_GREY
 
             # draw price icons
+            x_base = x_offset + (shift / 2) + 2 * seat_width
             data[picture_height - int(1.25 * seat_height):
                  picture_height - int(.25 * seat_height),
-                 low_price_x - seat_width / 2:
-                 low_price_x + seat_width / 2] = BLUE
+                 x_base - seat_width / 2:
+                 x_base + seat_width / 2] = BLUE
 
-            data[picture_height - int(1.25 * seat_height):
-                 picture_height - int(.25 * seat_height),
-                 high_price_x - seat_width / 2:
-                 high_price_x + seat_width / 2] = ORANGE
+            x_base_orange = x_base + 4 * seat_width
+            if high_price > low_price:
+                data[picture_height - int(1.25 * seat_height):
+                     picture_height - int(.25 * seat_height),
+                     x_base_orange - seat_width / 2:
+                     x_base_orange + seat_width / 2] = ORANGE
 
             img = Image.fromarray(data)
             draw = ImageDraw.Draw(img)
             draw_seat_numbers(draw, section, x_offset, y_offset)
 
             # draw price texts
-            draw.text((low_price_x + seat_width,
+            draw.text((x_base + seat_width,
                        picture_height - int(1. * seat_height)),
                       '{} {}'.format(low_price, SIGN_RUB),
                       fill=FILL_BLACK)
 
-            high_str = ('' if high_price == 0 or high_price <= low_price
-                        else '{} {}'.format(high_price, SIGN_RUB))
-
-            draw.text((high_price_x + seat_width,
-                       picture_height - int(1. * seat_height)),
-                      high_str,
-                      fill=FILL_BLACK)
+            if high_price > low_price:
+                high_str = '{} {}'.format(low_price, SIGN_RUB)
+                draw.text((x_base_orange + seat_width,
+                           picture_height - int(1. * seat_height)),
+                          high_str,
+                          fill=FILL_BLACK)
 
             draw_window(draw, picture_width, x_offset, y_offset)
 

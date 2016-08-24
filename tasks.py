@@ -1,10 +1,9 @@
 # coding: utf-8
 
 import telepot
-from kinohodbot import settings
-# from kinohodbot.celery import app
 
-TelegramBot = telepot.Bot(settings.TELEGRAM_BOT_TOKEN)
+# from kinohodtbot.celery import app
+
 
 
 # @app.task(bind=True, name='update_chat')

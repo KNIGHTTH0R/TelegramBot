@@ -37,4 +37,5 @@ def shorten_url(url, botan_token, user_id):
             'user_ids': str(user_id),
         }).text
     except:
-        return url
+        return
+
