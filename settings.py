@@ -25,19 +25,20 @@ JINJA_ENVIRONMENT = jinja2.Environment(
     autoescape=True
 )
 
-
+bot_username = 'KinohodTest_bot'
 KINOHOD_API_KEY = 'f056d104-abcd-3ab7-9132-cfcf3a098bc4'
-
 TELEGRAM_BOT_TOKEN = '220697123:AAGHvA89SQ3qVCXyafTB9GObKa7E1f9xRrs'
 BOTAN_TOKEN = 'ip2CSBT89XNqLbzAjcaF4vw6Iyc9LJIx'
+
+
 BASE_URL = 'https://api.telegram.org/bot{}/'.format(TELEGRAM_BOT_TOKEN)
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 TEMPLATES_DIR = os.path.join(BASE_DIR, 'templates')
 
-
 URL_RUNNING_MOVIES = 'https://api.kinohod.ru/api/data/2/{}/running.json.gz'
 URL_MOVIES_INFO = 'https://kinohod.ru/api/rest/partner/v1/movies/{}?apikey={}'
 URL_SEANCES = 'https://kinohod.ru/api/rest/partner/v1/movies/{}/schedules?apikey={}&rangeStart={}&limit={}'
+URL_FULL_SEANCES = 'https://kinohod.ru/api/rest/partner/v1/movies/{}/schedules?apikey={}'
 URL_CINEMA_SEANCES = 'https://kinohod.ru/api/rest/partner/v1/cinemas/{}/schedules?apikey={}&limit=10&date={}'
 CINEMA_HALL = 'https://kinohod.ru/api/rest/partner/v1/schedules/{}/hallscheme?apikey={}&limit=20'
 URL_IMDB = 'http://www.imdb.com/title/tt{}'
@@ -105,8 +106,10 @@ NO_MAIL_TICKET = 'Не пришло письмо с билетом'
 NO_PAY = 'Не прошла оплата'
 CANNOT_PAY = 'Невозможно оплатить'
 ERROR_SERVER_CONN = 'Ошибка соединения с сервером'
+PLEASE_WAIT_2_MIN = 'Пожалуйста, повторите попытку через несколько минут.'
 ONLINE_ISNT_VALID = 'Продажа билетов онлайн невозможна'
 TIME_PAY_EXC = 'Время для оплаты истекло'
+YOU_MAY_PAY = 'У вас есть 15 минут, чтобы ввести свои платежные данные. Если это время прошло, попробуйте оплатить еще раз.'
 ANOTHER_PAY_ER = 'Другая ошибка'
 YES_VALID_CASH = 'Средств достаточно'
 NO_CASH_INVALID = 'Нет, придется пополнить'
@@ -136,7 +139,20 @@ MAIL_SENDED = 'Теперь пришло'
 NO_MAIL_SENDED = 'Письма все еще нет'
 
 NEED_CONTACT = 'Мы взяли Ваш запрос в обработку и свяжемся с Вами в самое ближайшее время'
+NEED_CONTACT_MAIL = 'Пожалуйста введите Ваш email, чтобы наш специалист мог связаться с Вами.'
 PAY_ERROR = 'Какая ошибка появилась на сайте/в приложении?'
-
+INFO_FULL = 'Допишите id фильма в команду /info и получите подробную информацию о фильме '
 SUPPORT_INFO = 'Обращение в службу поддержки'
 
+support_a = {
+    NO_AGAIN: '{} > {} > {} > {} > {}'.format(
+        SUPPORT_INFO, PROBLEM_BUY_TICKET, NO_PAY,
+        CANNOT_PAY, YES_VALID_CASH, NO_AGAIN),
+
+    NO_MAIL_SENDED: '{} > {} > {} > {} > {} > {}'.format(
+        SUPPORT_INFO, PROBLEM_BUY_TICKET, NO_MAIL_TICKET,
+        YES_IT_WAS, NO_MAIL, NO_MAIL_SENDED),
+
+    ANOTHER_PAY_ER: '{} > {} > {} > {}'.format(
+        SUPPORT_INFO, PROBLEM_BUY_TICKET, NO_PAY, ANOTHER_PAY_ER)
+}

@@ -29,8 +29,17 @@ def display_movie_info(movie_id, telegram_user_id):
         return ', '.join([a.encode('utf-8') for a in html_data[name]])
 
     url = settings.URL_MOVIES_INFO.format(movie_id, settings.KINOHOD_API_KEY)
-    with contextlib.closing(urllib2.urlopen(url)) as jf:
-        html_data = json.loads(jf.read())
+
+    try:
+        with contextlib.closing(urllib2.urlopen(url)) as jf:
+            html_data = json.loads(jf.read())
+    except Exception as e:
+        import logging
+        logging.info(e.message)
+        return None, None, None
+
+    if isinstance(html_data, list):
+        html_data = html_data[-1]
 
     movie_poster = _get_movie_poster(html_data['poster'])
     if 'trailers' in html_data and 'mobile_mp4' in html_data['trailers'][0]:

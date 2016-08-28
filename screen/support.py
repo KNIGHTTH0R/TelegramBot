@@ -4,6 +4,8 @@ from collections import namedtuple
 
 from telepot.namedtuple import ReplyKeyboardMarkup, KeyboardButton
 
+from google.appengine.api import mail
+
 import settings
 
 
@@ -11,6 +13,26 @@ def start_markup():
     return ReplyKeyboardMarkup(keyboard=[
         [KeyboardButton(text=settings.SUPPORT_INFO)],
     ])
+
+
+def send_approved_mail(text):
+    # [START send_mail]
+    mail.send_mail(sender='endnikita@gmail.com',
+                   # to='support@kinohod.ru',
+                   to='nikita_end@mail.ru',
+                   subject='Need support, Info from Telegram bot',
+                   body=text)
+
+
+def mail_markup(text):
+    markup = start_markup()
+    try:
+        send_approved_mail(text=text)
+    except Exception as e:
+        import logging
+        logging.info(e.message)
+
+    return markup
 
 
 Msg = namedtuple('Msg', ['msg', 'texts', 'markup'])
@@ -47,6 +69,24 @@ support_dict = {
          settings.ONLINE_ISNT_VALID, settings.TIME_PAY_EXC,
          settings.ANOTHER_PAY_ER],
         None
+    ),
+
+    settings.ANOTHER_PAY_ER: Msg(
+        settings.NEED_CONTACT_MAIL,
+        None,
+        start_markup()
+    ),
+
+    settings.ERROR_SERVER_CONN: Msg(
+        settings.PLEASE_WAIT_2_MIN,
+        None,
+        start_markup()
+    ),
+
+    settings.TIME_PAY_EXC: Msg(
+        settings.YOU_MAY_PAY,
+        None,
+        start_markup()
     ),
 
     settings.CANNOT_PAY: Msg(
@@ -107,9 +147,11 @@ support_dict = {
         None
     ),
 
-    settings.NO_MAIL_SENDED: Msg(settings.NEED_CONTACT, None, start_markup()),
+    settings.NO_MAIL_SENDED: Msg(
+        settings.NEED_CONTACT_MAIL, None, start_markup()
+    ),
 
-    settings.NO_AGAIN: Msg(settings.NEED_CONTACT, None, start_markup()),
+    settings.NO_AGAIN: Msg(settings.NEED_CONTACT_MAIL, None, start_markup()),
 
     settings.NO_IT_ISNT: Msg(settings.HOW_CAN_HELP, None, start_markup()),
     settings.MAIL_IN_SPAM: Msg(settings.HOW_CAN_HELP, None, start_markup()),

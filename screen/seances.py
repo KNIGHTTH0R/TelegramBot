@@ -60,7 +60,7 @@ def display_seances(chat_id, movie_id, number_of_seances):
                 )
             )
 
-        correct = False
+        correct, n = False, settings.SEANCES_TO_DISPLAY
         while not correct:
             if len(seances) > number_of_seances:
                 n = settings.SEANCES_TO_DISPLAY
@@ -104,3 +104,51 @@ def display_seances(chat_id, movie_id, number_of_seances):
         'sign_tip': settings.SIGN_TIP,
         'seances': seances
     }), mark_up
+
+
+def display_seances_part(text, movie_id, number_of_seances):
+
+    url = settings.URL_FULL_SEANCES.format(
+        str(movie_id), settings.KINOHOD_API_KEY,
+    )
+
+    seances = []
+    html_data = get_data(url)
+    for info in html_data:
+        if (('shortTitle' in info['cinema'] and
+                info['cinema']['shortTitle'].find(text) > -1) or
+            ('address' in info['cinema'] and
+                info['cinema']['address'].find(text) > -1) or
+            ('subway_stations' in info['cinema'] and
+                'name' in info['cinema']['subway_stations'] and
+                info['cinema']['subway_stations']['name'].find(text) > -1)):
+
+            seances.append(
+                settings.Row(settings.uncd(info['cinema']['shortTitle']),
+                             '(/c{}m{})'.format(info['cinema']['id'],
+                                                info['movie']['id']))
+            )
+
+    empty_data(html_data=html_data)
+    if not len(seances):
+        template = settings.JINJA_ENVIRONMENT.get_template('no_seances.md')
+        return template.render({}), None
+
+    correct, n = False, settings.SEANCES_TO_DISPLAY
+    while not correct:
+        if len(seances) > number_of_seances:
+            n = settings.SEANCES_TO_DISPLAY
+            seances = seances[number_of_seances - n: number_of_seances]
+            correct = True
+        elif len(seances) > (number_of_seances - n):
+            seances = seances[number_of_seances - n:]
+            correct = True
+        else:
+            number_of_seances = n
+
+    template = settings.JINJA_ENVIRONMENT.get_template('seances.md')
+
+    return template.render({
+        'sign_tip': settings.SIGN_TIP,
+        'seances': seances
+    })
