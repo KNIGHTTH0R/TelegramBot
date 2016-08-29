@@ -209,6 +209,8 @@ class CommandReceiveView(webapp2.RequestHandler):
                     movie_id, d = cmd[index_of_m + 1:index_of_d], cmd[-1]
 
                     _send_cinema(telegram_bot, chat_id, cinema_id, movie_id, d)
+                    # Исправление call_back ответа при выборе сеанса
+                    _send_success(telegram_bot, callback_query_id)
 
             elif cmd.startswith('/schedule'):
                 schedule_id = cmd[9: len(cmd)]
