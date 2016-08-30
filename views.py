@@ -426,8 +426,10 @@ class CommandReceiveView(webapp2.RequestHandler):
                 except:
                     telegram_bot.sendMessage(chat_id,
                                              settings.SERVER_NOT_VALID)
+
             elif cmd.startswith('/info_full'):
                 telegram_bot.sendMessage(chat_id, settings.INFO_FULL)
+
             elif cmd.startswith('/info'):
                 movie_id = cmd[5:len(cmd)]
                 message, mark_up, movie_poster = display_movie_info(
@@ -447,16 +449,20 @@ class CommandReceiveView(webapp2.RequestHandler):
                 movie_id = cmd[index_of_m + 1:len(cmd)]
                 send_cinema(telegram_bot, chat_id, cinema_id, movie_id,
                             settings.TODAY)
+
             elif cmd.startswith('/movies'):
                 _send_running_movies(telegram_bot, chat_id,
                                      settings.FILMS_TO_DISPLAY)
+
             elif (prev_cmd and prev_cmd.cmd.startswith(
                     settings.NO_AGAIN.decode('utf-8'))):
                 _send_mail_story(telegram_bot, chat_id, settings.NO_AGAIN, cmd)
+
             elif (prev_cmd and prev_cmd.cmd.startswith(
                     settings.NO_MAIL_SENDED.decode('utf-8'))):
                 _send_mail_story(telegram_bot, chat_id,
                                  settings.NO_MAIL_SENDED, cmd)
+
             elif (prev_cmd and prev_cmd.cmd.startswith(
                     settings.ANOTHER_PAY_ER.decode('utf-8'))):
                 _send_mail_story(telegram_bot, chat_id,
@@ -469,21 +475,25 @@ class CommandReceiveView(webapp2.RequestHandler):
                 response = display_seances_part(cmd, movie_id,
                                                 int(number_of_seances))
                 telegram_bot.sendMessage(chat_id, response)
+
             else:
                 if support_generation(cmd, support_dict, telegram_bot,
                                       chat_id, message_id):
                     set_prev_cmd(chat_id, cmd)
                     return
+
                 markup = start_markup()
                 func = commands.get(cmd.split()[0].lower())
                 if func:
                     text = func()
                     telegram_bot.sendMessage(chat_id, text,
                                              reply_markup=markup)
+
                 if parse(cmd.encode('utf-8'), telegram_bot,
                          chat_id, telegram_user_id):
                     set_prev_cmd(chat_id, cmd)
                     return
+                
                 else:
                     if not is_group:
                         telegram_bot.sendMessage(
@@ -493,5 +503,6 @@ class CommandReceiveView(webapp2.RequestHandler):
                 prev_cmd = get_prev_cmd(chat_id)
                 if prev_cmd and not (cmd[:3]).startswith(prev_cmd.cmd):
                     set_prev_cmd(chat_id, cmd)
+
         except Exception as ex:
             raise endpoints.BadRequestException(ex.message)
