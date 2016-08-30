@@ -106,3 +106,5 @@ def display_cinema_seances(cinema_id, movie_id, day):
         return template.render(
             {'title': info['movie']['title'], 'seances': seances}
         ), markup
+
+    return None, None

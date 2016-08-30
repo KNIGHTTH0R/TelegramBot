@@ -41,8 +41,12 @@ def display_movie_info(movie_id, telegram_user_id):
     if isinstance(html_data, list):
         html_data = html_data[-1]
 
+    if not html_data:
+        return None, None, None
+
     movie_poster = _get_movie_poster(html_data['poster'])
-    if 'trailers' in html_data and 'mobile_mp4' in html_data['trailers'][0]:
+    if ('trailers' in html_data and isinstance(html_data['trailers'], list) and
+            len(html_data) > 0 and 'mobile_mp4' in html_data['trailers'][0]):
         kinohod_trailer_hash = (html_data['trailers'][0]
                                 ['mobile_mp4']['filename'])
         trailer_url = _get_movie_trailer_link(kinohod_trailer_hash)
