@@ -289,7 +289,7 @@ class CommandReceiveView(webapp2.RequestHandler):
                 movie_id = cmd[index_of_m + 1:len(cmd)]
 
                 send_cinema(telegram_bot, chat_id, cinema_id, movie_id,
-                             settings.TODAY)
+                            settings.TODAY)
 
             elif cmd.startswith('/movies'):
                 _send_running_movies(telegram_bot, chat_id,
@@ -493,7 +493,6 @@ class CommandReceiveView(webapp2.RequestHandler):
                          chat_id, telegram_user_id):
                     set_prev_cmd(chat_id, cmd)
                     return
-                
                 else:
                     if not is_group:
                         telegram_bot.sendMessage(
