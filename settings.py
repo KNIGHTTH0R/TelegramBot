@@ -25,9 +25,9 @@ JINJA_ENVIRONMENT = jinja2.Environment(
     autoescape=True
 )
 
-bot_username = 'KinohodTest_bot'
+bot_username = 'KinohodBot'
 KINOHOD_API_KEY = 'f056d104-abcd-3ab7-9132-cfcf3a098bc4'
-TELEGRAM_BOT_TOKEN = '220697123:AAGHvA89SQ3qVCXyafTB9GObKa7E1f9xRrs'
+TELEGRAM_BOT_TOKEN = '209622038:AAGuPWWiLqXXAZlEcfh6tC85DKtHslVUJdA'
 BOTAN_TOKEN = 'ip2CSBT89XNqLbzAjcaF4vw6Iyc9LJIx'
 
 
@@ -44,6 +44,7 @@ URL_CINEMA_SEANCES = 'https://kinohod.ru/api/rest/partner/v1/cinemas/{}/schedule
 CINEMA_HALL = 'https://kinohod.ru/api/rest/partner/v1/schedules/{}/hallscheme?apikey={}&limit=20'
 URL_IMDB = 'http://www.imdb.com/title/tt{}'
 URL_BASE_O = 'https://kinohod.ru/o/'
+URL_BASE_P = 'https://kinohod.ru/p/200x300/'
 URL_WIDGET_CINEMAS = 'http://kinohod.ru/widget/cinemas'
 
 FILMS_TO_DISPLAY = 10

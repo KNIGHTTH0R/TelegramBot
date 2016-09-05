@@ -42,7 +42,7 @@ def detect_category(spltd):
     if cat[0][0] > 0:
         spltd = [w for w in spltd if w not in cat[0][1]]
         return cat[1], spltd
-    return None, None
+    return None, spltd
 
 
 def parser(text):
@@ -65,7 +65,9 @@ def parser(text):
 
     film_names, places = get_films()
     if splitted:
-        f_names, splitted = category[cat](splitted, film_names.keys())
+        f_names, splitted = (category[cat](splitted, film_names.keys())
+                             if cat in category
+                             else category['buy'](splitted, film_names.keys()))
         cmds['what'] = [film_names[f] for f in f_names] if f_names else None
 
     if splitted:

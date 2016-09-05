@@ -18,7 +18,7 @@ def _get_movie_trailer_link(trailer_hash):
 
 def _get_movie_poster(poster_hash):
     ab, cd = poster_hash[0:2], poster_hash[2:4]
-    url = '{}{}/{}/{}'.format(settings.URL_BASE_O, ab, cd, poster_hash)
+    url = '{}{}/{}/{}'.format(settings.URL_BASE_P, ab, cd, poster_hash)
     poster = urllib2.urlopen(url)
     return poster
 
