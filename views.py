@@ -15,9 +15,10 @@ from draw import draw_cinemahall
 from screen.cinema_seances import display_cinema_seances
 from screen.help import display_help
 from screen.movie_info import display_movie_info
-from screen.running_movies import display_running_movies
+from screen.running_movies import display_running_movies, get_cinema_movies
 from screen.seances import display_seances, display_seances_part
 from screen.support import support_dict, mail_markup
+from screen.cinemas import get_nearest_cinemas
 from processing.parser import parser
 from model import (set_user, get_user, get_prev_cmd,
                    set_prev_cmd)
@@ -27,11 +28,9 @@ import settings
 
 
 def _send_running_movies(telegram_bot, chat_id, films_to_display):
-    response, markup = display_running_movies(
-        films_to_display
-    )
-
+    response, markup = display_running_movies(films_to_display)
     telegram_bot.sendMessage(chat_id, response,
+                             parse_mode='Markdown',
                              reply_markup=markup)
 
 
@@ -116,6 +115,23 @@ def _send_mail_story(telegram_bot, chat_id, text, cmd):
     )
 
 
+def _send_nearest_cinemas(telegram_bot, chat_id,
+                          number_to_display=settings.CINEMA_TO_SHOW):
+    msg, markup = get_nearest_cinemas(telegram_bot, chat_id, number_to_display)
+    if msg:
+        telegram_bot.sendMessage(chat_id, msg,
+                                 parse_mode='Markdown',
+                                 reply_markup=markup)
+
+
+def _send_cinema_movies(telegram_bot, chat_id, cinema_id, number_to_display):
+    msg, markup = get_cinema_movies(cinema_id, number_to_display)
+    if msg:
+        telegram_bot.sendMessage(chat_id, msg,
+                                 parse_mode='Markdown',
+                                 reply_markup=markup)
+
+
 def keyboard_generator(texts):
     keyboard = []
     for text in texts:
@@ -131,6 +147,7 @@ def msg_generator(telegram_bot, chat_id, msg, texts=None,
     telegram_bot.sendMessage(
         chat_id, msg,
         reply_to_message_id=message_id,
+        parse_mode='Markdown',
         reply_markup=markup
     )
 
@@ -168,170 +185,202 @@ class CommandReceiveView(webapp2.RequestHandler):
         except ValueError:
             raise endpoints.BadRequestException(message='Invalid request body')
 
-        try:
-            if 'message' in payload:
-                telegram_user_id = payload['message']['from']['id']
-                chat_id = payload['message']['chat']['id']
-                is_group = False
-
-                prev_cmd = get_prev_cmd(chat_id)
-                update_id = int(payload['update_id'])
-                if prev_cmd and (update_id < prev_cmd.update_id):
-                    return
-
-                if payload['message']['chat']['type'] == 'group':
-                    is_group = True
-                    cmd = payload['message'].get('text')
-                    if cmd:
-                        if '@' in cmd:
-                            p = cmd.split('@')
-                            if p[-1].find(settings.bot_username) > -1:
-                                cmd = p[0]
-                            else:
-                                return
-                    else:
-                        return
+        # try:
+        if 'message' in payload:
+            telegram_user_id = payload['message']['from']['id']
+            chat_id = payload['message']['chat']['id']
+            is_group = False
+            prev_cmd = get_prev_cmd(chat_id)
+            if payload['message']['chat']['type'] == 'group':
+                is_group = True
+                cmd = payload['message'].get('text')
+                if cmd:
+                    if '@' in cmd:
+                        p = cmd.split('@')
+                        if p[-1].find(settings.bot_username) > -1:
+                            cmd = p[0]
+                        else:
+                            return
                 else:
-                    cmd = payload['message'].get('text')
-                if not cmd:
                     return
-                message_id = payload['message']['message_id']
-                if 'location' in payload['message']:
-                    if not get_user(chat_id):
-                        l = payload['message']['location']
-                        set_user(chat_id=chat_id, location=l)
-                        telegram_bot.sendMessage(
-                            chat_id, settings.THANK_FOR_INFORMATION)
-                    else:
-                        l = payload['message']['location']
-                        set_user(chat_id=chat_id, location=l)
-                        telegram_bot.sendMessage(
-                            chat_id, settings.THANK_FOR_INFORMATION_AGAIN)
-                    # nothing else should be displayed (after location)
-                    return
+            else:
+                cmd = payload['message'].get('text')
 
-            if 'callback_query' in payload:
-                cmd = payload['callback_query']['data']
-                callback_query_id = int(payload['callback_query']['id'])
-                chat_id = payload['callback_query']['message']['chat']['id']
-                update_id = int(payload['callback_query']['update_id'])
+            message_id = payload['message']['message_id']
 
-                if not cmd:
-                    return
-                elif cmd.startswith('/seance'):
-                    i_n = cmd.index('num')
-                    movie_id = cmd[len('/seance'): i_n]
-                    number_of_seances = cmd[i_n + len('num'): len(cmd)]
-                    _send_seances(telegram_bot, chat_id, movie_id,
-                                  number_of_seances, payload)
-                    _send_success(telegram_bot, callback_query_id)
-                elif cmd.startswith('/movies'):
-                    number_to_display = int(cmd[7:len(cmd)])
-                    _send_running_movies(telegram_bot, chat_id,
-                                         number_to_display)
-                    _send_success(telegram_bot, callback_query_id)
-                elif cmd.startswith('/c'):
-                    index_of_m, index_of_d = cmd.index('m'), cmd.index('d')
-                    cinema_id = cmd[2:index_of_m]
-                    movie_id, d = cmd[index_of_m + 1:index_of_d], cmd[-1]
-                    send_cinema(telegram_bot, chat_id, cinema_id, movie_id, d)
-            elif cmd.startswith('/schedule'):
-                schedule_id = cmd[9: len(cmd)]
-                try:
-                    hall_image = draw_cinemahall(schedule_id)
-                    city_name_dict = {'cityName': u'Москва'.encode('utf-8')}
-                    url_encoded_dict = urllib.urlencode(city_name_dict)
-                    shorten_url = botan.shorten_url(
-                        'https://kinohod.ru/widget/?{}#scheme_{}'.format(
-                            url_encoded_dict, schedule_id
-                        ), settings.BOTAN_TOKEN, telegram_user_id
-                    )
-                    markup = InlineKeyboardMarkup(inline_keyboard=[
-                        [dict(text=settings.BUY_TICKET, url=shorten_url)]
-                    ])
-                    telegram_bot.sendChatAction(chat_id, 'upload_photo')
-                    telegram_bot.sendPhoto(chat_id, ('hall.bmp', hall_image),
-                                           reply_markup=markup)
-                except:
-                    telegram_bot.sendMessage(chat_id,
-                                             settings.SERVER_NOT_VALID)
+            if 'location' in payload['message']:
+                if not get_user(chat_id):
+                    l = payload['message']['location']
+                    set_user(chat_id=chat_id, location=l)
+                    telegram_bot.sendMessage(
+                        chat_id, settings.THANK_FOR_INFORMATION)
+                else:
+                    l = payload['message']['location']
+                    set_user(chat_id=chat_id, location=l)
+                    telegram_bot.sendMessage(
+                        chat_id, settings.THANK_FOR_INFORMATION_AGAIN)
+                # nothing else should be displayed (after location)
+                if prev_cmd.cmd.startswith('/nearest'):
+                    _send_nearest_cinemas(telegram_bot, chat_id)
+                return
 
-            elif cmd.startswith('/info_full'):
-                telegram_bot.sendMessage(chat_id, settings.INFO_FULL)
+        else:  # this mean that message not in payload
+            return
 
-            elif cmd.startswith('/info'):
-                movie_id = cmd[5:len(cmd)]
-                message, mark_up, movie_poster = display_movie_info(
-                    movie_id, telegram_user_id
-                )
-                if not message or not mark_up or not movie_poster:
-                    telegram_bot.sendMessage(chat_id,
-                                             settings.SERVER_NOT_VALID)
-                telegram_bot.sendChatAction(chat_id, 'upload_photo')
-                telegram_bot.sendPhoto(chat_id, ('poster.jpg', movie_poster))
-                telegram_bot.sendMessage(chat_id, message,
-                                         reply_markup=mark_up,
-                                         parse_mode='Markdown')
-            elif cmd.startswith('/c'):
-                index_of_m = cmd.index('m')
-                cinema_id = cmd[2:index_of_m]
-                movie_id = cmd[index_of_m + 1:len(cmd)]
-                send_cinema(telegram_bot, chat_id, cinema_id, movie_id,
-                            settings.TODAY)
+        if 'callback_query' in payload:
+            cmd = payload['callback_query']['data']
+            callback_query_id = int(payload['callback_query']['id'])
+            chat_id = payload['callback_query']['message']['chat']['id']
+
+            if cmd.startswith('/seance'):
+                i_n = cmd.index('num')
+                movie_id = cmd[len('/seance'): i_n]
+                number_of_seances = cmd[i_n + len('num'): len(cmd)]
+                _send_seances(telegram_bot, chat_id, movie_id,
+                              number_of_seances, payload)
+                _send_success(telegram_bot, callback_query_id)
+
+            elif cmd.startswith('/nearest'):
+                telegram_bot.sendMessage(chat_id, cmd)
+                number_to_display = int(cmd[len('/nearest'):])
+                _send_nearest_cinemas(telegram_bot, chat_id, number_to_display)
+
+            elif cmd.startswith('/cinema'):
+                index_of_v = cmd.index('v')
+                cinema_id = int(cmd[len('/cinema'): index_of_v])
+                number_to_display = int(cmd[index_of_v + 1:])
+                _send_cinema_movies(telegram_bot, chat_id,
+                                    cinema_id, number_to_display)
 
             elif cmd.startswith('/movies'):
+                number_to_display = int(cmd[7:len(cmd)])
                 _send_running_movies(telegram_bot, chat_id,
-                                     settings.FILMS_TO_DISPLAY)
+                                     number_to_display)
+                _send_success(telegram_bot, callback_query_id)
 
-            elif (prev_cmd and prev_cmd.cmd.startswith(
-                    settings.NO_AGAIN.decode('utf-8'))):
-                _send_mail_story(telegram_bot, chat_id, settings.NO_AGAIN, cmd)
+            elif cmd.startswith('/c'):
+                index_of_m, index_of_d = cmd.index('m'), cmd.index('d')
+                cinema_id = cmd[2:index_of_m]
+                movie_id, d = cmd[index_of_m + 1:index_of_d], cmd[-1]
+                send_cinema(telegram_bot, chat_id, cinema_id, movie_id, d)
 
-            elif (prev_cmd and prev_cmd.cmd.startswith(
-                    settings.NO_MAIL_SENDED.decode('utf-8'))):
-                _send_mail_story(telegram_bot, chat_id,
-                                 settings.NO_MAIL_SENDED, cmd)
+        elif cmd is None:
+            return
 
-            elif (prev_cmd and prev_cmd.cmd.startswith(
-                    settings.ANOTHER_PAY_ER.decode('utf-8'))):
-                _send_mail_story(telegram_bot, chat_id,
-                                 settings.ANOTHER_PAY_ER, cmd)
-            elif (prev_cmd and
-                    prev_cmd.cmd.startswith('/seance'.decode('utf-8'))):
-                i_n, l_n = prev_cmd.cmd.index('num'), len('num')
-                movie_id = prev_cmd.cmd[7: i_n]
-                number_of_seances = prev_cmd.cmd[i_n + l_n: len(prev_cmd.cmd)]
-                response = display_seances_part(cmd, movie_id,
-                                                int(number_of_seances))
-                telegram_bot.sendMessage(chat_id, response)
+        elif cmd.startswith('/nearest'):
+            if not prev_cmd.cmd.find('/nearest') > -1:
+                telegram_bot.sendMessage(chat_id, settings.ALLOW_LOCATION)
 
+        elif cmd.startswith('/cinema'):
+            cinema_id = int(cmd[len('/cinema'):])
+            _send_cinema_movies(telegram_bot, chat_id,
+                                cinema_id, settings.FILMS_TO_DISPLAY)
+
+        elif cmd.startswith('/schedule'):
+            schedule_id = cmd[9: len(cmd)]
+            try:
+                hall_image = draw_cinemahall(schedule_id)
+                city_name_dict = {'cityName': u'Москва'.encode('utf-8')}
+                url_encoded_dict = urllib.urlencode(city_name_dict)
+                shorten_url = botan.shorten_url(
+                    'https://kinohod.ru/widget/?{}#scheme_{}'.format(
+                        url_encoded_dict, schedule_id
+                    ), settings.BOTAN_TOKEN, telegram_user_id
+                )
+                markup = InlineKeyboardMarkup(inline_keyboard=[
+                    [dict(text=settings.BUY_TICKET, url=shorten_url)]
+                ])
+                telegram_bot.sendChatAction(chat_id, 'upload_photo')
+                telegram_bot.sendPhoto(chat_id, ('hall.bmp', hall_image),
+                                       reply_markup=markup)
+            except:
+                telegram_bot.sendMessage(chat_id,
+                                         settings.SERVER_NOT_VALID)
+
+        elif cmd.startswith('/info_full'):
+            telegram_bot.sendMessage(chat_id, settings.INFO_FULL)
+
+        elif cmd.startswith('/info'):
+            movie_id = cmd[5:len(cmd)]
+
+            if not str(movie_id).isdigit():
+                telegram_bot.sendMessage(
+                    chat_id, settings.INFO_NOT_FULL.format(movie_id)
+                )
+                return
+
+            message, mark_up, movie_poster = display_movie_info(
+                movie_id, telegram_user_id
+            )
+
+            if not message or not mark_up or not movie_poster:
+                telegram_bot.sendMessage(chat_id,
+                                         settings.SERVER_NOT_VALID)
+                return
+            telegram_bot.sendChatAction(chat_id, 'upload_photo')
+            telegram_bot.sendPhoto(chat_id, ('poster.jpg', movie_poster))
+            telegram_bot.sendMessage(chat_id, message,
+                                     reply_markup=mark_up,
+                                     parse_mode='Markdown')
+
+        elif cmd.startswith('/c'):
+            index_of_m = cmd.index('m')
+            cinema_id = cmd[2:index_of_m]
+            movie_id = cmd[index_of_m + 1:len(cmd)]
+            send_cinema(telegram_bot, chat_id, cinema_id, movie_id,
+                        settings.TODAY)
+
+        elif cmd.startswith('/movies'):
+            _send_running_movies(telegram_bot, chat_id,
+                                 settings.FILMS_TO_DISPLAY)
+
+        elif (prev_cmd and prev_cmd.cmd.startswith(
+                settings.NO_AGAIN.decode('utf-8'))):
+            _send_mail_story(telegram_bot, chat_id, settings.NO_AGAIN, cmd)
+
+        elif (prev_cmd and prev_cmd.cmd.startswith(
+                settings.NO_MAIL_SENDED.decode('utf-8'))):
+            _send_mail_story(telegram_bot, chat_id,
+                             settings.NO_MAIL_SENDED, cmd)
+
+        elif (prev_cmd and prev_cmd.cmd.startswith(
+                settings.ANOTHER_PAY_ER.decode('utf-8'))):
+            _send_mail_story(telegram_bot, chat_id,
+                             settings.ANOTHER_PAY_ER, cmd)
+        elif (prev_cmd and
+                prev_cmd.cmd.startswith('/seance'.decode('utf-8'))):
+            i_n, l_n = prev_cmd.cmd.index('num'), len('num')
+            movie_id = prev_cmd.cmd[7: i_n]
+            number_of_seances = prev_cmd.cmd[i_n + l_n: len(prev_cmd.cmd)]
+            response = display_seances_part(cmd, movie_id,
+                                            int(number_of_seances))
+            telegram_bot.sendMessage(chat_id, response)
+        else:
+            if support_generation(cmd, support_dict, telegram_bot,
+                                  chat_id, message_id):
+                set_prev_cmd(chat_id, cmd)
+                return
+            markup = start_markup()
+            func = commands.get(cmd.split()[0].lower())
+            if func:
+                text = func()
+                telegram_bot.sendMessage(chat_id, text,
+                                         parse_mode='Markdown',
+                                         reply_markup=markup)
+            elif parse(cmd.encode('utf-8'), telegram_bot,
+                       chat_id, telegram_user_id):
+                set_prev_cmd(chat_id, cmd)
+                return
             else:
-                if support_generation(cmd, support_dict, telegram_bot,
-                                      chat_id, message_id):
-                    set_prev_cmd(chat_id, cmd, update_id)
-                    return
+                if not is_group:
+                    telegram_bot.sendMessage(
+                        chat_id, settings.DONT_UNDERSTAND,
+                        parse_mode='Markdown',
+                        reply_markup=markup)
+        if cmd:
+            prev_cmd = get_prev_cmd(chat_id)
+            if prev_cmd and not (cmd[:3]).startswith(prev_cmd.cmd):
+                set_prev_cmd(chat_id, cmd)
 
-                markup = start_markup()
-                func = commands.get(cmd.split()[0].lower())
-                if func:
-                    text = func()
-                    telegram_bot.sendMessage(chat_id, text,
-                                             reply_markup=markup)
-
-                elif parse(cmd.encode('utf-8'), telegram_bot,
-                         chat_id, telegram_user_id):
-                    set_prev_cmd(chat_id, cmd, update_id)
-                    return
-
-                else:
-                    if not is_group:
-                        telegram_bot.sendMessage(
-                            chat_id, settings.DONT_UNDERSTAND,
-                            reply_markup=markup)
-            if cmd:
-                prev_cmd = get_prev_cmd(chat_id)
-                if prev_cmd and not (cmd[:3]).startswith(prev_cmd.cmd):
-                    set_prev_cmd(chat_id, cmd, update_id)
-
-        except Exception as ex:
-            raise endpoints.BadRequestException(ex.message)
+        # except Exception as ex:
+        #     raise endpoints.BadRequestException(ex.message)

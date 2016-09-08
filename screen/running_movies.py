@@ -13,12 +13,7 @@ from telepot.namedtuple import InlineKeyboardMarkup
 import settings
 
 
-def display_running_movies(number_of_movies):
-    url = settings.URL_RUNNING_MOVIES.format(settings.KINOHOD_API_KEY)
-    with contextlib.closing(urllib2.urlopen(url)) as jf:
-        m_stream = gzip.GzipFile(fileobj=StringIO(jf.read()), mode='rb')
-        data = json.loads(m_stream.read())
-
+def process_movies(data, number_of_movies, callback_url):
     videos, premiers = [], []
     for film_counter in xrange(number_of_movies - settings.FILMS_TO_DISPLAY,
                                number_of_movies):
@@ -28,15 +23,18 @@ def display_running_movies(number_of_movies):
             return (settings.NO_FILMS,
                     InlineKeyboardMarkup(inline_keyboard=[[
                         dict(text=settings.FIRST_TEN,
-                             callback_data=('/movies{}'.format(
+                             callback_data=(callback_url.format(
                                  settings.FILMS_TO_DISPLAY)))
                     ]]))
 
         f_info = settings.Row(settings.uncd(movie['title']), movie['id'])
 
         if movie['premiereDateRussia']:
-            prem_date = datetime.strptime(movie['premiereDateRussia'],
-                                          '%Y-%m-%d')
+            t_str = movie['premiereDateRussia']
+            if 'T' in t_str:
+                t_str = t_str.split('T')[0]
+
+            prem_date = datetime.strptime(t_str, '%Y-%m-%d')
             if prem_date > datetime.now():
                 premiers.append(f_info)
             else:
@@ -46,7 +44,7 @@ def display_running_movies(number_of_movies):
 
     mark_up = InlineKeyboardMarkup(inline_keyboard=[
         [dict(text=settings.MORE,
-              callback_data=('/movies{}'.format(
+              callback_data=(callback_url.format(
                   number_of_movies + settings.FILMS_TO_DISPLAY)
               ))]
     ])
@@ -56,3 +54,23 @@ def display_running_movies(number_of_movies):
                             'sign_video': settings.SIGN_VIDEO,
                             'sign_tip': settings.SIGN_TIP,
                             'sign_premier': settings.SIGN_PREMIER}), mark_up
+
+
+def display_running_movies(number_of_movies):
+    url = settings.URL_RUNNING_MOVIES.format(settings.KINOHOD_API_KEY)
+    with contextlib.closing(urllib2.urlopen(url)) as jf:
+        m_stream = gzip.GzipFile(fileobj=StringIO(jf.read()), mode='rb')
+        data = json.loads(m_stream.read())
+
+    callback_url = '/movies{}'
+    return process_movies(data, number_of_movies, callback_url)
+
+
+def get_cinema_movies(cinema_id, number_of_movies):
+    url = settings.URL_CINEMA_MOVIE.format(cinema_id, settings.KINOHOD_API_KEY)
+    with contextlib.closing(urllib2.urlopen(url)) as jf:
+        data = json.loads(jf.read())
+
+    data = [d['movie'] for d in data]
+    callback_url = '/cinema' + str(cinema_id) + 'v{}'
+    return process_movies(data, number_of_movies, callback_url)

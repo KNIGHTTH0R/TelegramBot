@@ -1,4 +1,5 @@
 # coding: utf-8
+# flake8: noqa
 
 import os
 
@@ -41,6 +42,7 @@ URL_MOVIES_INFO = 'https://kinohod.ru/api/rest/partner/v1/movies/{}?apikey={}'
 URL_SEANCES = 'https://kinohod.ru/api/rest/partner/v1/movies/{}/schedules?apikey={}&rangeStart={}&limit={}'
 URL_FULL_SEANCES = 'https://kinohod.ru/api/rest/partner/v1/movies/{}/schedules?apikey={}'
 URL_CINEMA_SEANCES = 'https://kinohod.ru/api/rest/partner/v1/cinemas/{}/schedules?apikey={}&limit=10&date={}'
+URL_CINEMA_MOVIE = 'https://kinohod.ru/api/rest/partner/v1/cinemas/{}/schedules?apikey={}'
 CINEMA_HALL = 'https://kinohod.ru/api/rest/partner/v1/schedules/{}/hallscheme?apikey={}&limit=20'
 URL_IMDB = 'http://www.imdb.com/title/tt{}'
 URL_BASE_O = 'https://kinohod.ru/o/'
@@ -49,6 +51,7 @@ URL_WIDGET_CINEMAS = 'http://kinohod.ru/widget/cinemas'
 
 FILMS_TO_DISPLAY = 10
 CINEMAS_TO_DISPLAY = 10
+CINEMA_TO_SHOW = 10
 SEANCES_TO_DISPLAY = 10
 
 TODAY = 0
@@ -56,7 +59,9 @@ TOMORROW = 1
 A_TOMORROW = 2
 
 
+SIGN_WRITE = '\xF0\x9F\x92\xAC'.decode('utf-8')
 SIGN_VIDEO = '\xF0\x9F\x8E\xA5'.decode('utf-8')
+SIGN_CLIP = '\xf0\x9f\x93\x8e'.decode('utf-8')
 SIGN_PREMIER = '\xF0\x9F\x8E\xAC'.decode('utf-8')
 SIGN_TIP = '\xE2\x9C\x94'.decode('utf-8')
 SIGN_ACTOR = unicode('\xF0\x9F\x91\xA4', encoding='utf-8')  # .decode('utf-8')
@@ -66,7 +71,10 @@ SIGN_SMILE_HELP = '\xE2\x96\xAA'.decode('utf-8')
 
 
 SIGN_RUB = 'P'
+FIRST_THREE = 'Первые три'
 CHOOSE_SEANCE = 'Выбрать сеанс'.decode('utf-8')
+ALLOW_LOCATION = 'Отправьте нам свое местоположение'
+CANNOT_FIND_YOU = 'Не удается найти Вас'
 FIND_CINEMA = 'Вы можете ввести часть названия кинотеатра, а мы попытаемся найти его для Вас'
 FIRST_TEN = 'Первые 10'
 NO_FILMS = 'К сожалению, больше нет фильмов в прокате.'
@@ -140,6 +148,7 @@ MAILS_A_LOT = 'Возможно, Ваш ящик переполнен, и пис
 MAIL_SENDED = 'Теперь пришло'
 NO_MAIL_SENDED = 'Письма все еще нет'
 
+INFO_NOT_FULL = 'нет фильма с таким номером {}'
 NEED_CONTACT = 'Мы взяли Ваш запрос в обработку и свяжемся с Вами в самое ближайшее время'
 NEED_CONTACT_MAIL = 'Пожалуйста введите Ваш email, чтобы наш специалист мог связаться с Вами.'
 PAY_ERROR = 'Какая ошибка появилась на сайте/в приложении?'

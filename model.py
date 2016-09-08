@@ -21,13 +21,11 @@ def get_user(chat_id):
 
 class PrevCmd(ndb.Model):
     cmd = ndb.TextProperty()
-    update_id = ndb.IntegerProperty()
 
 
-def set_prev_cmd(chat_id, text, update_id):
+def set_prev_cmd(chat_id, text):
     c = PrevCmd.get_or_insert(str(chat_id))
     c.cmd = text
-    c.update_id = update_id
     c.put()
 
 

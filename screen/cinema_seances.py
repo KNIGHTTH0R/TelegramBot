@@ -80,8 +80,13 @@ def display_cinema_seances(cinema_id, movie_id, day):
         cinema_id, settings.KINOHOD_API_KEY, day_str
     )
 
-    with contextlib.closing(urllib2.urlopen(url)) as hd:
-        html_data = json.loads(hd.read())
+    try:
+        with contextlib.closing(urllib2.urlopen(url)) as hd:
+            html_data = json.loads(hd.read())
+    except Exception as ex:
+        import logging
+        logging.debug(ex.message)
+        return None, None
 
     f = namedtuple('f', ['tip', 'time', 'minPrice', 'id'])
 
