@@ -3,7 +3,7 @@
 import settings
 
 
-def display_help():
+def get_help():
     template = settings.JINJA_ENVIRONMENT.get_template('help.md')
     return template.render({
         'write': settings.SIGN_WRITE,

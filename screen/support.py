@@ -35,13 +35,24 @@ def mail_markup(text):
     return markup
 
 
+def send_mail_story(telegram_bot, chat_id, text, cmd):
+    markup = mail_markup('{} my email: {}'.format(
+        settings.support_a[text],
+        cmd.encode('utf-8')
+    ))
+
+    telegram_bot.sendMessage(
+        chat_id, settings.NEED_CONTACT, markup
+    )
+
+
 Msg = namedtuple('Msg', ['msg', 'texts', 'markup'])
 
 support_dict = {
     settings.SUPPORT_INFO: Msg(
         settings.HOW_CAN_HELP,
-        [settings.FAIL_CODE_WORD, settings.PROBLEM_BUY_TICKET,
-         settings.TICKET_RETURNING, settings.ANOTHER],
+        [settings.TICKET_RETURNING, settings.PROBLEM_BUY_TICKET,
+         settings.FAIL_CODE_WORD, settings.ANOTHER],
         None
     ),
 
@@ -164,3 +175,33 @@ support_dict = {
         settings.HOW_CAN_HELP, None, start_markup()
     ),
 }
+
+
+def keyboard_generator(texts):
+    keyboard = []
+    for text in texts:
+        keyboard.append([KeyboardButton(text=text)])
+    return ReplyKeyboardMarkup(keyboard=keyboard)
+
+
+def msg_generator(telegram_bot, chat_id, msg, texts=None,
+                  message_id=None, markup=None):
+    if markup is None:
+        markup = keyboard_generator(texts) if texts else None
+
+    telegram_bot.sendMessage(
+        chat_id, msg,
+        reply_to_message_id=message_id,
+        parse_mode='Markdown',
+        reply_markup=markup
+    )
+
+
+def support_generation(cmd, d, bot, chat_id, message_id):
+    for k, v in d.iteritems():
+        if cmd.startswith(k.decode('utf-8')):
+            msg_generator(bot, chat_id, v.msg, message_id=message_id,
+                          texts=v.texts, markup=v.markup)
+            return True
+    return False
+

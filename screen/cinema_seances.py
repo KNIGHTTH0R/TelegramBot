@@ -73,8 +73,12 @@ def _day_of_seance(day):
 
 
 def display_cinema_seances(cinema_id, movie_id, day):
-    day = int(day)
-    day_str = _day_of_seance(day)
+
+    if not isinstance(day, datetime):
+        day = int(day)
+        day_str = _day_of_seance(day)
+    else:
+        day_str = day.strftime('%d%m%Y')
 
     url = settings.URL_CINEMA_SEANCES.format(
         cinema_id, settings.KINOHOD_API_KEY, day_str
@@ -91,7 +95,10 @@ def display_cinema_seances(cinema_id, movie_id, day):
     f = namedtuple('f', ['tip', 'time', 'minPrice', 'id'])
 
     if html_data is None:
-        return None, None
+        return settings.NO_SEANCE, None
+
+    if html_data:
+        place = html_data[0]['cinema']['title']
 
     for info in html_data:
         if int(movie_id) != int(info['movie']['id']):
@@ -109,7 +116,11 @@ def display_cinema_seances(cinema_id, movie_id, day):
         markup = _construct_markup(cinema_id, movie_id, day)
         template = settings.JINJA_ENVIRONMENT.get_template('cinema_seances.md')
         return template.render(
-            {'title': info['movie']['title'], 'seances': seances}
+            {'title': info['movie']['title'],
+             'seances': seances,
+             'place': place}
         ), markup
 
-    return None, None
+    return '/c{}m{}  {}'.decode('utf-8').format(
+        cinema_id, movie_id, settings.NO_SEANCE
+    ), None

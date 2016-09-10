@@ -35,7 +35,7 @@ def get_data(url):
         return json.loads(jf.read())
 
 
-def display_seances(chat_id, movie_id, number_of_seances):
+def get_seances(chat_id, movie_id, number_of_seances):
 
     u = get_user(chat_id)
 
@@ -124,13 +124,13 @@ def display_seances_part(text, movie_id, number_of_seances):
                 info['cinema']['subway_stations']['name'].find(text) > -1)):
 
             seances.append(
-                settings.Row(settings.uncd(info['cinema']['shortTitle']),
+                settings.Row(info['cinema']['shortTitle'],
                              '(/c{}m{})'.format(info['cinema']['id'],
                                                 info['movie']['id']))
             )
 
     empty_data(html_data=html_data)
-    if not len(seances):
+    if len(seances) < 1:
         template = settings.JINJA_ENVIRONMENT.get_template('no_seances.md')
         return template.render({}), None
 
