@@ -48,6 +48,7 @@ URL_IMDB = 'http://www.imdb.com/title/tt{}'
 URL_BASE_O = 'https://kinohod.ru/o/'
 URL_BASE_P = 'https://kinohod.ru/p/200x300/'
 URL_WIDGET_CINEMAS = 'http://kinohod.ru/widget/cinemas'
+BASE_KINOHOD = 'https://kinohod.ru'
 
 FILMS_TO_DISPLAY = 10
 CINEMAS_TO_DISPLAY = 10
@@ -58,7 +59,7 @@ TODAY = 0
 TOMORROW = 1
 A_TOMORROW = 2
 
-
+SIGN_SCREAMING = '\xF0\x9F\x98\xB1'.decode('utf-8')
 SIGN_WRITE = '\xF0\x9F\x92\xAC'.decode('utf-8')
 SIGN_VIDEO = '\xF0\x9F\x8E\xA5'.decode('utf-8')
 SIGN_CLIP = '\xf0\x9f\x93\x8e'.decode('utf-8')
@@ -67,7 +68,8 @@ SIGN_TIP = '\xE2\x9C\x94'.decode('utf-8')
 SIGN_ACTOR = unicode('\xF0\x9F\x91\xA4', encoding='utf-8')  # .decode('utf-8')
 SIGN_NEW_ROW = '\n'.decode('utf-8')
 SIGN_SMILE_HELP = '\xE2\x96\xAA'.decode('utf-8')
-
+SIGN_DOWN_FINGER = '\xF0\x9F\x91\x87'.decode('utf-8')
+SIGN_FINGER = '\xF0\x9F\x91\x8D'.decode('utf-8')
 
 
 SIGN_RUB = 'P'
@@ -79,12 +81,14 @@ FIND_CINEMA = 'Вы можете ввести часть названия кин
 FIRST_TEN = 'Первые 10'
 NO_FILMS = 'К сожалению, больше нет фильмов в прокате.'
 MORE = 'Ещё'
+MORE_INFO = 'Подробнее о предложениях'
 TREILER = 'Трейлер'
-DONT_UNDERSTAND = 'Я Вас не понимаю'
+DONT_UNDERSTAND = 'Я Вас не понимаю {}'.decode('utf-8').format(SIGN_SCREAMING)
 CINEMA_NOT_VALID = 'Кинотеатр не доступен сейчас'
 ON_TOMORROW = 'На завтра'
 ON_A_TOMORROW = 'На послезавтра'
 ON_TODAY = 'На сегодня'
+NO_SEANCE = 'Нет сеансов на выбранный фильм в этом кинотеатре {}'.decode('utf-8').format(SIGN_SCREAMING)
 SERVER_NOT_VALID = 'Увы, сервер недоступен.'
 BUY_TICKET = 'Купить билеты'
 SHARE_LOCATION = 'Мое местоположение'
@@ -108,7 +112,7 @@ IF_TERMINAL_NOT_WORKING = 'Если терминал не работает, об
 HOW_CAN_HELP = 'Чем я могу Вам помочь?'
 SECRET_WORD = 'Наше секретное слово - Киноход. Приятного просмотра!'
 BACK = 'Назад'
-SUPPORT_HELP = 'Чем я могу Вам помочь?'
+SUPPORT_HELP = 'Чем я могу Вам помочь? {}'.decode('utf-8').format(SIGN_DOWN_FINGER)
 WHAT_PROBLEM = 'В чем проблема?'
 NO_MAIL_TICKET = 'Не пришло письмо с билетом'
 
