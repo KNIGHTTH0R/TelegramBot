@@ -5,12 +5,14 @@ import gzip
 import urllib2
 import json
 
+from datetime import datetime, timedelta
+
 from StringIO import StringIO
 
 import pymorphy2
 
 
-from mapping import categories, stop_words
+from mapping import categories, stop_words, when_nearest, when_week
 from maching import damerau_levenshtein_distance
 import settings
 
@@ -51,7 +53,7 @@ def parser(text):
         'info': parse_info
     }
 
-    cmds = {'category': None, 'place': None, 'what': None}
+    cmds = {'category': None, 'place': None, 'what': None, 'when': None}
 
     splitted = [morph.parse(w.decode('utf-8'))[0].normal_form
                 for w in text.split(' ') if text]
@@ -73,7 +75,26 @@ def parser(text):
     if splitted:
         candidate = determine_place(splitted, places.keys())
         cmds['place'] = [places[p] for p in candidate]
+
+    if splitted:
+        cmds['when'] = detect_time(text)
+
     return cmds
+
+
+def detect_time(text):
+    n = datetime.now()
+    for k, ws in when_nearest.iteritems():
+        for w in ws:
+            if text.find(w) > -1:
+                return n + timedelta(days=k)
+
+    for k, ws in when_week.iteritems():
+        for w in ws:
+            if text.find(w):
+                week_day = n.isoweekday()
+                if week_day > k:
+                    return n + timedelta(days=(7 - week_day + 1 + k))
 
 
 def parse_film(spltd, film_names):
