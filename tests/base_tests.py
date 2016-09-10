@@ -2,6 +2,8 @@
 
 import unittest
 
+from mock import Mock
+
 import telepot
 
 from commands import (display_help, display_seances_cinema, display_info,
@@ -14,6 +16,13 @@ import settings
 
 
 class SlashCommandTests(unittest.TestCase):
+
+    def mock_send_message(self, chat_id, text, parse_mode=None,
+                          disable_web_page_preview=None,
+                          disable_notification=None, reply_to_message_id=None,
+                          reply_markup=None):
+        print 'chat_id={} and msg={}'.format(chat_id, text)
+        return 'message'
 
     def setUp(self):
         self.telegram_bot = telepot.Bot(settings.TELEGRAM_BOT_TOKEN)
@@ -48,18 +57,43 @@ class SlashCommandTests(unittest.TestCase):
         """
         display start screen 'help.md'
         """
-        pass
+        bot = Mock(spec=telepot.Bot)
+
+        bot_spec = {
+            'sendMessage.side_effect': self.mock_send_message
+        }
+
+        bot.configure_mock(**bot_spec)
+
+        display_help(bot, {}, 'cmd', 1)
+        bot.assert_called_once()
+
+        # display_help(self.telegram_bot, {}, '', 1)
+        # self.telegram_bot.assert_called_once()
 
     def test_help(self):
         """
         as /start command, but another link
         """
+        self.test_start()
 
     def test_running_movie(self):
         """
         display name of the films
         """
-        pass
+        bot = Mock(spec=telepot.Bot)
+
+        bot_spec = {
+            'sendMessage.side_effect': self.mock_send_message,
+        }
+
+        bot.configure_mock(**bot_spec)
+
+        display_movies(
+            bot, {'callback_query': True}, '/movies', 1
+        )
+
+        bot.assert_called_once()
 
     def test_schedule(self):
         """
