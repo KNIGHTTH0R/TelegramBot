@@ -7,8 +7,7 @@ from mock import Mock
 import telepot
 
 from commands import (display_help, display_seances_cinema, display_info,
-                      display_movies, display_info_full, display_nearest,
-                      display_cinema, display_schedule, display_seance)
+                      display_movies, display_info_full, display_cinema)
 
 from views import detect_instruction, make_instruction
 

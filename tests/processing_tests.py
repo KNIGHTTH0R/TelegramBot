@@ -3,15 +3,9 @@
 import unittest
 
 from datetime import datetime, timedelta
-from mock import Mock, patch
+from mock import Mock
 
 from processing.parser import parser
-
-from views import parse
-
-import telepot
-
-import settings
 
 
 class ParserTests(unittest.TestCase):
@@ -89,7 +83,7 @@ class ParserTests(unittest.TestCase):
         """
 
         info = {
-            'хочу билет на борн' : 'борн',
+            'хочу билет на борн': 'борн',
             'билет на Бен-Гур': 'бен-гур',
             'взять Гамба парочку': 'гамба',
             'хочу на жизнь домашних животных': 'тайная жизнь домашних животных'

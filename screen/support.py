@@ -204,4 +204,3 @@ def support_generation(cmd, d, bot, chat_id, message_id):
                           texts=v.texts, markup=v.markup)
             return True
     return False
-
