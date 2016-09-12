@@ -51,7 +51,7 @@ Msg = namedtuple('Msg', ['msg', 'texts', 'markup'])
 support_dict = {
     settings.SUPPORT_INFO: Msg(
         settings.HOW_CAN_HELP,
-        [settings.TICKET_RETURNING, settings.PROBLEM_BUY_TICKET,
+        [settings.PROBLEM_BUY_TICKET,
          settings.FAIL_CODE_WORD, settings.ANOTHER],
         None
     ),
@@ -117,10 +117,6 @@ support_dict = {
     ),
 
     settings.NO_QR: Msg(settings.QR_SPECIAL_VALID, None, start_markup()),
-
-    settings.TICKET_RETURNING: Msg(
-        settings.TICKET_RETURNING_REPLY, None, start_markup()
-    ),
 
     settings.ANOTHER: Msg(
         settings.WHAT_A_PROBLEM,

@@ -160,3 +160,7 @@ def display_info(bot, payload, cmd, chat_id):
     bot.sendPhoto(chat_id, ('poster.jpg', movie_poster))
     bot.sendMessage(chat_id, message, reply_markup=mark_up,
                     parse_mode='Markdown')
+
+
+def display_return(bot, payload, cmd, chat_id):
+    bot.sendMessage(chat_id, settings.ENTER_ORDER_NUMBER)

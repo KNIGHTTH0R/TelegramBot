@@ -3,10 +3,12 @@
 import endpoints
 import json
 import webapp2
+import requests
 
 from collections import OrderedDict
 
 import telepot
+from validate_email import validate_email
 
 from google.appengine.api import urlfetch
 
@@ -22,9 +24,9 @@ from processing.parser import parser
 from commands import (display_nearest, display_seance, send_reply,
                       display_cinema, display_seances_cinema,
                       display_schedule, display_info_full, display_movies,
-                      display_info, display_help)
-from model import (set_user, get_user, get_prev_cmd,
-                   set_prev_cmd)
+                      display_info, display_help, display_return)
+from model import (set_user, get_user, get_prev_cmd, set_return_ticket,
+                   get_return_ticket, set_prev_cmd)
 
 import settings
 
@@ -86,7 +88,8 @@ def make_instruction():
         '/c': display_seances_cinema,
         '/schedule': display_schedule,
         '/info_full': display_info_full,
-        '/info': display_info
+        '/info': display_info,
+        '/return': display_return,
     })
 
 
@@ -170,8 +173,8 @@ class CommandReceiveView(webapp2.RequestHandler):
                 settings.ANOTHER_PAY_ER.decode('utf-8'))):
             send_mail_story(telegram_bot, chat_id,
                             settings.ANOTHER_PAY_ER, cmd)
-        elif (prev_cmd and
-                prev_cmd.cmd.startswith('/seance'.decode('utf-8'))):
+
+        elif prev_cmd and prev_cmd.cmd.startswith('/seance'.decode('utf-8')):
             i_n, l_n = prev_cmd.cmd.index('num'), len('num')
             movie_id = prev_cmd.cmd[7: i_n]
             number_of_seances = prev_cmd.cmd[i_n + l_n: len(prev_cmd.cmd)]
@@ -180,6 +183,51 @@ class CommandReceiveView(webapp2.RequestHandler):
                                             int(number_of_seances))
             if response:
                 telegram_bot.sendMessage(chat_id, response)
+
+        elif prev_cmd and prev_cmd.cmd.startswith('/return'.decode('utf-8')):
+            if prev_cmd.cmd[len('/return'):] == '1':
+                cmd = str(cmd).strip()
+                if validate_email(cmd):
+                    set_return_ticket(chat_id, email=cmd)
+                else:
+                    telegram_bot.sendMessage(chat_id, settings.INVALID_EMAIL)
+                    set_prev_cmd(chat_id, cmd)
+                    return
+            else:
+                try:
+                    order_numb = int(cmd)
+                    set_return_ticket(chat_id, number=order_numb)
+                    set_prev_cmd(chat_id, '/return' + '1')
+                    telegram_bot.sendMessage(chat_id,
+                                             settings.ENTER_ORDER_EMAIL)
+                except Exception as e:
+                    telegram_bot.sendMessage(chat_id, settings.INVALID_ORDER)
+                    set_prev_cmd(chat_id, cmd)
+                return
+
+            rt = get_return_ticket(chat_id)
+            if rt.number and rt.email:
+                r = requests.post(
+                    settings.URL_CANCEL_TOKEN,
+                    json={'order': rt.number, 'email': rt.email}
+                )
+
+                r_json = r.json()
+                if r_json['error'] != 0:
+                    telegram_bot.sendMessage(chat_id, settings.CANCEL_ERROR)
+
+                else:
+                    if r_json['data']['error'] != 0:
+                        telegram_bot.sendMessage(chat_id,
+                                                 settings.CANCEL_ERROR)
+                    else:
+                        token = r_json['data']['token']
+                        url = settings.URL_CANCEL_TICKET.format(token)
+                        cancel_r = requests.get(url)
+                        telegram_bot.sendMessage(chat_id, cancel_r.json())
+            else:
+                telegram_bot.sendMessage(chat_id, settings.ERROR_SERVER_CONN)
+
         else:
             if support_generation(cmd, support_dict, telegram_bot,
                                   chat_id, message_id):

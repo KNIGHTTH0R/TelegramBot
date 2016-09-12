@@ -45,6 +45,8 @@ URL_CINEMA_SEANCES = 'https://kinohod.ru/api/rest/partner/v1/cinemas/{}/schedule
 URL_CINEMA_MOVIE = 'https://kinohod.ru/api/rest/partner/v1/cinemas/{}/schedules?apikey={}'
 CINEMA_HALL = 'https://kinohod.ru/api/rest/partner/v1/schedules/{}/hallscheme?apikey={}&limit=20'
 URL_IMDB = 'http://www.imdb.com/title/tt{}'
+URL_CANCEL_TOKEN = 'https://kinohod.ru/ch/'
+URL_CANCEL_TICKET = 'https://kinohod.ru/cancel/{}'
 URL_BASE_O = 'https://kinohod.ru/o/'
 URL_BASE_P = 'https://kinohod.ru/p/200x300/'
 URL_WIDGET_CINEMAS = 'http://kinohod.ru/widget/cinemas'
@@ -159,6 +161,14 @@ PAY_ERROR = 'Какая ошибка появилась на сайте/в пр�
 INFO_FULL = 'Допишите id фильма в команду /info и получите подробную информацию о фильме '
 SUPPORT_INFO = 'Обращение в службу поддержки'
 CINEMA_IS_NOT_SHOWN = 'Фильм не идет в рассматриваемом кинотеатре'
+ENTER_ORDER_NUMBER = 'Введите номер заказа'
+ENTER_ORDER_EMAIL = 'Введите email на который был выслан билет'
+INVALID_ORDER = 'Неправильный номер заказа'
+INVALID_EMAIL = 'Некорректный email'
+CANCEL_SUCCESS = 'Отмена заказа прошла успешно'
+CANCEL_ERROR = 'Отмена заказа завершилась ошибкой'
+
+
 
 support_a = {
     NO_AGAIN: '{} > {} > {} > {} > {}'.format(

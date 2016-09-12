@@ -19,6 +19,27 @@ def get_user(chat_id):
     return UserProfile.get_by_id(str(chat_id))
 
 
+class ReturnTicket(ndb.Model):
+    number = ndb.IntegerProperty()
+    email = ndb.StringProperty()
+
+
+def get_return_ticket(chat_id):
+    return ReturnTicket.get_by_id(str(chat_id))
+
+
+def set_return_ticket(chat_id, number=None, email=None):
+    t = ReturnTicket.get_or_insert(str(chat_id))
+
+    if number:
+        t.number = number
+
+    if email:
+        t.email = email
+
+    t.put()
+
+
 class PrevCmd(ndb.Model):
     cmd = ndb.TextProperty()
 
