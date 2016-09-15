@@ -17,9 +17,11 @@ def start_markup():
 
 def send_approved_mail(text):
     # [START send_mail]
+
     mail.send_mail(sender='endnikita@gmail.com',
                    # to='support@kinohod.ru',
-                   to='nikita_end@mail.ru',
+                   to='testbot@kinohod.ru',
+                   # to='nikita_end@mail.ru',
                    subject='Need support, Info from Telegram bot',
                    body=text)
 
@@ -41,9 +43,8 @@ def send_mail_story(telegram_bot, chat_id, text, cmd):
         cmd.encode('utf-8')
     ))
 
-    telegram_bot.sendMessage(
-        chat_id, settings.NEED_CONTACT, markup
-    )
+    if markup:
+        telegram_bot.sendMessage(chat_id, settings.NEED_CONTACT, markup)
 
 
 Msg = namedtuple('Msg', ['msg', 'texts', 'markup'])

@@ -48,12 +48,7 @@ def detect_category(spltd):
 
 
 def parser(text):
-    category = {
-        'buy': parse_film,
-        'info': parse_info
-    }
-
-    cmds = {'category': None, 'place': None, 'what': None, 'when': None}
+    cmds = {'place': None, 'what': None, 'when': None}
 
     splitted = [morph.parse(w.decode('utf-8'))[0].normal_form
                 for w in text.split(' ') if text]
@@ -61,15 +56,10 @@ def parser(text):
     sw_decode = [w.decode('utf-8') for w in stop_words]
     splitted = [w for w in splitted if w not in sw_decode]
 
-    if splitted:
-        cat, splitted = detect_category(splitted)
-        cmds['category'] = cat
-
     film_names, places = get_films()
+
     if splitted:
-        f_names, splitted = (category[cat](splitted, film_names.keys())
-                             if cat in category
-                             else category['buy'](splitted, film_names.keys()))
+        f_names, splitted = parse_film(splitted, film_names.keys())
         cmds['what'] = [film_names[f] for f in f_names] if f_names else None
 
     if splitted:
@@ -83,7 +73,7 @@ def parser(text):
 
 
 def detect_time(text):
-    n = datetime.now()
+    n = datetime.utcnow()
     for k, ws in when_nearest.iteritems():
         for w in ws:
             if text.find(w) > -1:
@@ -99,23 +89,26 @@ def detect_time(text):
 
 def parse_film(spltd, film_names):
 
-    def film_similarity(f, s):
-        return True if f.find(s) > -1 else False
-
     splitted = [w for w in spltd if len(w) > 2]
     candidate = {i: 0 for i, f_name in enumerate(film_names)}
-    new_spltd = set()
-    for i, f_name in enumerate(film_names):
-        f_name = morph.parse(f_name.lower())[0].normal_form
-        for w in splitted:
-            if film_similarity(f_name, w):
-                candidate[i] += 1
-                new_spltd.add(w)
 
-    new_spltd = list(new_spltd)
+    for i, f_name in enumerate(film_names):
+        f_name_list = [morph.parse(f.lower())[0].normal_form
+                       for f in f_name.split()]
+        #
+        count = 0
+        for f_w in f_name_list:
+            for s_w in splitted:
+                m = min(len(s_w), len(f_w))
+                if damerau_levenshtein_distance(f_w, s_w) < (1 + 0.25 * m):
+                    count += 1
+                    break
+
+        if count >= 0.5 * len(f_name_list):
+            candidate[i] += 1
 
     return ([film_names[k] for k, v in candidate.iteritems() if v > 0],
-            [w for w in spltd if w not in new_spltd])
+            splitted)
 
 
 def determine_place(spltd, places):

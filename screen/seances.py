@@ -132,7 +132,7 @@ def display_seances_part(text, movie_id, number_of_seances):
     empty_data(html_data=html_data)
     if len(seances) < 1:
         template = settings.JINJA_ENVIRONMENT.get_template('no_seances.md')
-        return template.render({}), None
+        return template.render({})
 
     correct, n = False, settings.SEANCES_TO_DISPLAY
     while not correct:

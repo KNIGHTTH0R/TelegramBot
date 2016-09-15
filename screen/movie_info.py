@@ -4,7 +4,7 @@ import contextlib
 import urllib2
 import json
 
-from telepot.namedtuple import InlineKeyboardMarkup, KeyboardButton
+from telepot.namedtuple import InlineKeyboardMarkup
 
 import botan
 import settings
@@ -17,6 +17,8 @@ def _get_movie_trailer_link(trailer_hash):
 
 
 def _get_movie_poster(poster_hash):
+    if not poster_hash or len(poster_hash) < 4:
+        return
     ab, cd = poster_hash[0:2], poster_hash[2:4]
     url = '{}{}/{}/{}'.format(settings.URL_BASE_P, ab, cd, poster_hash)
     poster = urllib2.urlopen(url)
@@ -45,6 +47,7 @@ def display_movie_info(movie_id, telegram_user_id):
         return None, None, None
 
     movie_poster = _get_movie_poster(html_data['poster'])
+
     if ('trailers' in html_data and isinstance(html_data['trailers'], list) and
             len(html_data) > 0 and 'mobile_mp4' in html_data['trailers'][0]):
         kinohod_trailer_hash = (html_data['trailers'][0]
@@ -74,5 +77,4 @@ def display_movie_info(movie_id, telegram_user_id):
         'actors': get_data('actors').decode('utf-8'),
         'producers': get_data('producers').decode('utf-8'),
         'directors': get_data('directors').decode('utf-8')}),
-            markup, movie_poster
-    )
+        markup, movie_poster)

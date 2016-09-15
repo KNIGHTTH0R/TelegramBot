@@ -71,11 +71,10 @@ class ParserTests(unittest.TestCase):
         # return {k: v[index] for k, v in info.iteritems()}
 
     def week_day(self, p):
-        d = datetime.now()
+        d = datetime.utcnow()
         if d.isoweekday() > p:
-            return (datetime.now() +
-                    timedelta(days=(7 - d.isoweekday() + 1 + p)))
-        return datetime.now() + timedelta(days=p)
+            return d + timedelta(days=(7 - d.isoweekday() + 1 + p))
+        return d + timedelta(days=p)
 
     def test_parse_what(self):
         """
@@ -118,11 +117,10 @@ class ParserTests(unittest.TestCase):
         """
 
         from processing.mapping import week_when
-
+        now = datetime.utcnow()
         info = {
-            'купить билет на завтра':
-                (datetime.now() + timedelta(days=1)),
-            'билет на что-то на сегодня': datetime.now(),
+            'купить билет на завтра': (now + timedelta(days=1)),
+            'билет на что-то на сегодня': now,
             'хочу в кино в понедельник':
                 self.week_day(week_when['понедельник'])
         }
@@ -153,15 +151,15 @@ class ParserTests(unittest.TestCase):
     def test_combination_what_place_when(self):
 
         from processing.mapping import week_when
-
+        now = datetime.utcnow()
         info = {
             'хочу билет на механика на павелецкой сегодня':
-                ['механик', 'павелецк', datetime.now()],
+                ['механик', 'павелецк', now],
             'борн на арбате в понедельник':
                 ['борн', 'арбат', self.week_day(week_when['понедельник'])],
             'жизнь домашних животных в пионер завтра':
                 ['тайная жизнь домашних животных', 'пионер',
-                 datetime.now() + timedelta(days=1)]
+                 datetime.utcnow() + timedelta(days=1)]
         }
 
         self.preprocess_fo_what(self.gen_info(info, 0))

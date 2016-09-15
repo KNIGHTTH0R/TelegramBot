@@ -40,13 +40,9 @@ def parse(request, bot, chat_id, tuid):
             bot.sendChatAction(chat_id, 'upload_photo')
             bot.sendPhoto(chat_id, ('poster.jpg', poster))
             bot.sendMessage(chat_id, message, reply_markup=mark_up,
-                            parse_mode='Markdown')
+                            parse_mode='Markdown', )
 
     cmds = parser(request)
-
-    if cmds['what'] and not cmds['category']:
-        process_what(cmds['what'])
-        return True
 
     flag = False
     if cmds['what'] and cmds['place']:
@@ -108,147 +104,149 @@ class CommandReceiveView(webapp2.RequestHandler):
         except ValueError:
             raise endpoints.BadRequestException(message='Invalid request body')
 
-        # try:
-        cmd, is_group, prev_cmd, chat_id = None, False, None, None
-        telegram_user_id, message_id = 0, 0
-        if 'message' in payload:
-            telegram_user_id = payload['message']['from']['id']
-            chat_id = payload['message']['chat']['id']
-            prev_cmd = get_prev_cmd(chat_id)
-            if payload['message']['chat']['type'] == 'group':
-                is_group = True
-                cmd = payload['message'].get('text')
-                if cmd:
-                    if '@' in cmd:
-                        p = cmd.split('@')
-                        if p[-1].find(settings.bot_username) > -1:
-                            cmd = p[0]
-                        else:
-                            return
+        try:
+            cmd, is_group, prev_cmd, chat_id = None, False, None, None
+            telegram_user_id, message_id = 0, 0
+            if 'message' in payload:
+                telegram_user_id = payload['message']['from']['id']
+                chat_id = payload['message']['chat']['id']
+                prev_cmd = get_prev_cmd(chat_id)
+                if payload['message']['chat']['type'] == 'group':
+                    is_group = True
+                    cmd = payload['message'].get('text')
+                    if cmd:
+                        if '@' in cmd:
+                            p = cmd.split('@')
+                            if p[-1].find(settings.bot_username) > -1:
+                                cmd = p[0]
+                            else:
+                                return
+                    else:
+                        return
+
                 else:
+                    cmd = payload['message'].get('text')
+                message_id = payload['message']['message_id']
+                if 'location' in payload['message']:
+                    if not get_user(chat_id):
+                        l = payload['message']['location']
+                        set_user(chat_id=chat_id, location=l)
+                        telegram_bot.sendMessage(
+                            chat_id, settings.THANK_FOR_INFORMATION)
+                    else:
+                        l = payload['message']['location']
+                        set_user(chat_id=chat_id, location=l)
+                        telegram_bot.sendMessage(
+                            chat_id, settings.THANK_FOR_INFORMATION_AGAIN)
+                    # nothing else should be displayed (after location)
+                    if prev_cmd.cmd.startswith('/nearest'):
+                        send_reply(telegram_bot, chat_id, get_nearest_cinemas,
+                                   telegram_bot, chat_id,
+                                   settings.CINEMA_TO_SHOW)
                     return
-            else:
-                cmd = payload['message'].get('text')
 
-            message_id = payload['message']['message_id']
+            if 'callback_query' in payload:
+                cmd = payload['callback_query']['data']
+                chat_id = payload['callback_query']['message']['chat']['id']
 
-            if 'location' in payload['message']:
-                if not get_user(chat_id):
-                    l = payload['message']['location']
-                    set_user(chat_id=chat_id, location=l)
-                    telegram_bot.sendMessage(
-                        chat_id, settings.THANK_FOR_INFORMATION)
-                else:
-                    l = payload['message']['location']
-                    set_user(chat_id=chat_id, location=l)
-                    telegram_bot.sendMessage(
-                        chat_id, settings.THANK_FOR_INFORMATION_AGAIN)
-                # nothing else should be displayed (after location)
-                if prev_cmd.cmd.startswith('/nearest'):
-                    send_reply(telegram_bot, chat_id, get_nearest_cinemas,
-                               telegram_bot, chat_id, settings.CINEMA_TO_SHOW)
+            elif cmd is None:
                 return
 
-        if 'callback_query' in payload:
-            cmd = payload['callback_query']['data']
-            chat_id = payload['callback_query']['message']['chat']['id']
+            func = detect_instruction(instructions, cmd)
+            if func:
+                func(telegram_bot, payload, cmd, chat_id)
 
-        elif cmd is None:
-            return
+            elif (prev_cmd and prev_cmd.cmd.startswith(
+                    settings.NO_AGAIN.decode('utf-8'))):
+                send_mail_story(telegram_bot, chat_id, settings.NO_AGAIN, cmd)
 
-        func = detect_instruction(instructions, cmd)
-        if func:
-            func(telegram_bot, payload, cmd, chat_id)
+            elif (prev_cmd and prev_cmd.cmd.startswith(
+                    settings.NO_MAIL_SENDED.decode('utf-8'))):
+                send_mail_story(telegram_bot, chat_id,
+                                settings.NO_MAIL_SENDED, cmd)
 
-        elif (prev_cmd and prev_cmd.cmd.startswith(
-                settings.NO_AGAIN.decode('utf-8'))):
-            send_mail_story(telegram_bot, chat_id, settings.NO_AGAIN, cmd)
+            elif (prev_cmd and prev_cmd.cmd.startswith(
+                    settings.ANOTHER_PAY_ER.decode('utf-8'))):
+                send_mail_story(telegram_bot, chat_id,
+                                settings.ANOTHER_PAY_ER, cmd)
 
-        elif (prev_cmd and prev_cmd.cmd.startswith(
-                settings.NO_MAIL_SENDED.decode('utf-8'))):
-            send_mail_story(telegram_bot, chat_id,
-                            settings.NO_MAIL_SENDED, cmd)
+            elif (prev_cmd and
+                    prev_cmd.cmd.startswith('/seance'.decode('utf-8'))):
+                i_n, l_n = prev_cmd.cmd.index('num'), len('num')
+                movie_id = prev_cmd.cmd[7: i_n]
+                number_of_seances = prev_cmd.cmd[i_n + l_n: len(prev_cmd.cmd)]
+                response = display_seances_part(cmd, movie_id,
+                                                int(number_of_seances))
+                if response is not None:
+                    telegram_bot.sendMessage(chat_id, response)
 
-        elif (prev_cmd and prev_cmd.cmd.startswith(
-                settings.ANOTHER_PAY_ER.decode('utf-8'))):
-            send_mail_story(telegram_bot, chat_id,
-                            settings.ANOTHER_PAY_ER, cmd)
-
-        elif prev_cmd and prev_cmd.cmd.startswith('/seance'.decode('utf-8')):
-            i_n, l_n = prev_cmd.cmd.index('num'), len('num')
-            movie_id = prev_cmd.cmd[7: i_n]
-            number_of_seances = prev_cmd.cmd[i_n + l_n: len(prev_cmd.cmd)]
-
-            response = display_seances_part(cmd, movie_id,
-                                            int(number_of_seances))
-            if response:
-                telegram_bot.sendMessage(chat_id, response)
-
-        elif prev_cmd and prev_cmd.cmd.startswith('/return'.decode('utf-8')):
-            if prev_cmd.cmd[len('/return'):] == '1':
-                cmd = str(cmd).strip()
-                if validate_email(cmd):
-                    set_return_ticket(chat_id, email=cmd)
+            elif (prev_cmd and
+                    prev_cmd.cmd.startswith('/return'.decode('utf-8'))):
+                if prev_cmd.cmd[len('/return'):] == '1':
+                    cmd = str(cmd).strip()
+                    if validate_email(cmd):
+                        set_return_ticket(chat_id, email=cmd)
+                    else:
+                        telegram_bot.sendMessage(chat_id,
+                                                 settings.INVALID_EMAIL)
+                        set_prev_cmd(chat_id, cmd)
+                        return
                 else:
-                    telegram_bot.sendMessage(chat_id, settings.INVALID_EMAIL)
-                    set_prev_cmd(chat_id, cmd)
+                    try:
+                        order_numb = int(cmd)
+                        set_return_ticket(chat_id, number=order_numb)
+                        set_prev_cmd(chat_id, '/return' + '1')
+                        telegram_bot.sendMessage(chat_id,
+                                                 settings.ENTER_ORDER_EMAIL)
+                    except Exception:
+                        telegram_bot.sendMessage(chat_id,
+                                                 settings.INVALID_ORDER)
+                        set_prev_cmd(chat_id, cmd)
                     return
-            else:
-                try:
-                    order_numb = int(cmd)
-                    set_return_ticket(chat_id, number=order_numb)
-                    set_prev_cmd(chat_id, '/return' + '1')
-                    telegram_bot.sendMessage(chat_id,
-                                             settings.ENTER_ORDER_EMAIL)
-                except Exception as e:
-                    telegram_bot.sendMessage(chat_id, settings.INVALID_ORDER)
-                    set_prev_cmd(chat_id, cmd)
-                return
-
-            rt = get_return_ticket(chat_id)
-            if rt.number and rt.email:
-                r = requests.post(
-                    settings.URL_CANCEL_TOKEN,
-                    json={'order': rt.number, 'email': rt.email}
-                )
-
-                r_json = r.json()
-                if r_json['error'] != 0:
-                    telegram_bot.sendMessage(chat_id, settings.CANCEL_ERROR)
-
-                else:
-                    if r_json['data']['error'] != 0:
+                rt = get_return_ticket(chat_id)
+                if rt.number and rt.email:
+                    r = requests.post(
+                        settings.URL_CANCEL_TOKEN,
+                        json={'order': rt.number, 'email': rt.email}
+                    )
+                    r_json = r.json()
+                    if r_json['error'] != 0:
                         telegram_bot.sendMessage(chat_id,
                                                  settings.CANCEL_ERROR)
                     else:
-                        token = r_json['data']['token']
-                        url = settings.URL_CANCEL_TICKET.format(token)
-                        cancel_r = requests.get(url)
-                        telegram_bot.sendMessage(chat_id, cancel_r.json())
+                        if r_json['data']['error'] != 0:
+                            telegram_bot.sendMessage(chat_id,
+                                                     settings.CANCEL_ERROR)
+                        else:
+                            token = r_json['data']['token']
+                            url = settings.URL_CANCEL_TICKET.format(token)
+                            cancel_r = requests.get(url)
+                            telegram_bot.sendMessage(chat_id, cancel_r.json())
+                else:
+                    telegram_bot.sendMessage(chat_id,
+                                             settings.ERROR_SERVER_CONN)
             else:
-                telegram_bot.sendMessage(chat_id, settings.ERROR_SERVER_CONN)
+                if support_generation(cmd, support_dict, telegram_bot,
+                                      chat_id, message_id):
+                    set_prev_cmd(chat_id, cmd)
+                    return
 
-        else:
-            if support_generation(cmd, support_dict, telegram_bot,
-                                  chat_id, message_id):
-                set_prev_cmd(chat_id, cmd)
-                return
+                elif parse(cmd.encode('utf-8'), telegram_bot,
+                           chat_id, telegram_user_id):
+                    set_prev_cmd(chat_id, cmd)
+                    return
 
-            elif parse(cmd.encode('utf-8'), telegram_bot,
-                       chat_id, telegram_user_id):
-                set_prev_cmd(chat_id, cmd)
-                return
+                else:
+                    if not is_group:
+                        telegram_bot.sendMessage(
+                            chat_id, settings.DONT_UNDERSTAND,
+                            parse_mode='Markdown',
+                            reply_markup=start_markup())
+            if cmd:
+                prev_cmd = get_prev_cmd(chat_id)
+                if prev_cmd and not (cmd[:3]).startswith(prev_cmd.cmd):
+                    set_prev_cmd(chat_id, cmd)
 
-            else:
-                if not is_group:
-                    telegram_bot.sendMessage(
-                        chat_id, settings.DONT_UNDERSTAND,
-                        parse_mode='Markdown',
-                        reply_markup=start_markup())
-        if cmd:
-            prev_cmd = get_prev_cmd(chat_id)
-            if prev_cmd and not (cmd[:3]).startswith(prev_cmd.cmd):
-                set_prev_cmd(chat_id, cmd)
-
-        # except Exception as ex:
-        #     raise endpoints.BadRequestException(ex.message)
+        except Exception:
+            # raise endpoints.BadRequestException(ex.message)
+            return

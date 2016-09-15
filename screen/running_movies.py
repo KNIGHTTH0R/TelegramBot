@@ -35,7 +35,8 @@ def process_movies(data, number_of_movies, callback_url):
                 t_str = t_str.split('T')[0]
 
             prem_date = datetime.strptime(t_str, '%Y-%m-%d')
-            if prem_date > datetime.now():
+            now = datetime.utcnow()
+            if prem_date > now:
                 premiers.append(f_info)
             else:
                 videos.append(f_info)

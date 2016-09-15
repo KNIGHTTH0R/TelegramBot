@@ -26,6 +26,7 @@ JINJA_ENVIRONMENT = jinja2.Environment(
     autoescape=True
 )
 
+TIMEZONE = 2
 bot_username = 'KinohodBot'
 KINOHOD_API_KEY = 'f056d104-abcd-3ab7-9132-cfcf3a098bc4'
 TELEGRAM_BOT_TOKEN = '209622038:AAGuPWWiLqXXAZlEcfh6tC85DKtHslVUJdA'
@@ -167,7 +168,6 @@ INVALID_ORDER = 'Неправильный номер заказа'
 INVALID_EMAIL = 'Некорректный email'
 CANCEL_SUCCESS = 'Отмена заказа прошла успешно'
 CANCEL_ERROR = 'Отмена заказа завершилась ошибкой'
-
 
 
 support_a = {

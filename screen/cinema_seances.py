@@ -62,11 +62,11 @@ def _day_of_seance(day):
     def day_func(d):
         return '{}{}{}'.format(_r_day(d.day), _r_day(d.month), _r_day(d.year))
 
+    now = datetime.utcnow()
     v = {
-        settings.TODAY: datetime.now(),
-        settings.TOMORROW: datetime.now() + timedelta(days=settings.TOMORROW),
-        settings.A_TOMORROW:
-            datetime.now() + 2 * timedelta(days=settings.TOMORROW)
+        settings.TODAY: now,
+        settings.TOMORROW: now + timedelta(days=settings.TOMORROW),
+        settings.A_TOMORROW: now + 2 * timedelta(days=settings.TOMORROW)
     }
 
     return day_func(v[day]) if day in v else ''
