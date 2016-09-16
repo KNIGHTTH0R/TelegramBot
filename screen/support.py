@@ -2,6 +2,7 @@
 
 from collections import namedtuple
 
+from validate_email import validate_email
 from telepot.namedtuple import ReplyKeyboardMarkup, KeyboardButton
 
 from google.appengine.api import mail
@@ -38,6 +39,10 @@ def mail_markup(text):
 
 
 def send_mail_story(telegram_bot, chat_id, text, cmd):
+    if not validate_email(cmd.encode('utf-8')):
+        telegram_bot.sendMessage(chat_id, settings.INVALID_EMAIL)
+        return
+
     markup = mail_markup('{} my email: {}'.format(
         settings.support_a[text],
         cmd.encode('utf-8')
