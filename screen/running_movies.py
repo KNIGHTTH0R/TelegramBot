@@ -15,8 +15,17 @@ import settings
 
 def process_movies(data, number_of_movies, callback_url):
     videos, premiers = [], []
-    for film_counter in xrange(number_of_movies - settings.FILMS_TO_DISPLAY,
+
+    to_show = settings.FILMS_TO_DISPLAY
+    if len(data) == 0:
+        to_show = 0
+
+    elif len(data) < settings.FILMS_TO_DISPLAY:
+        to_show = len(data)
+
+    for film_counter in xrange(number_of_movies - to_show,
                                number_of_movies):
+
         if film_counter < len(data):
             movie = data[film_counter]
         else:
@@ -67,11 +76,15 @@ def display_running_movies(number_of_movies):
     return process_movies(data, number_of_movies, callback_url)
 
 
-def get_cinema_movies(cinema_id, number_of_movies):
+def get_cinema_movies(cinema_id, number_of_movies, bot, chat_id):
     url = settings.URL_CINEMA_MOVIE.format(cinema_id, settings.KINOHOD_API_KEY)
     with contextlib.closing(urllib2.urlopen(url)) as jf:
         data = json.loads(jf.read())
 
     data = [d['movie'] for d in data]
-    callback_url = '/cinema' + str(cinema_id) + 'v{}'
+    callback_url = '/show' + str(cinema_id) + 'v{}'
+
+    if len(data) < number_of_movies:
+        number_of_movies = len(data)
+
     return process_movies(data, number_of_movies, callback_url)

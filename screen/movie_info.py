@@ -4,6 +4,8 @@ import contextlib
 import urllib2
 import json
 
+from google.appengine.ext import deferred
+
 from telepot.namedtuple import InlineKeyboardMarkup
 
 import botan

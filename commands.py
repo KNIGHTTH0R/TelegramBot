@@ -44,6 +44,7 @@ def display_help(bot, payload, cmd, chat_id):
 
 
 def display_nearest(bot, payload, cmd, chat_id):
+    bot.sendChatAction(chat_id, action='typing')
     if 'callback_query' in payload:
         number_to_display = int(cmd[len('/nearest'):])
         send_reply(bot, chat_id, get_nearest_cinemas,
@@ -54,6 +55,8 @@ def display_nearest(bot, payload, cmd, chat_id):
 
 
 def display_seance(bot, payload, cmd, chat_id):
+    bot.sendChatAction(chat_id, action='typing')
+
     if 'callback_query' in payload:
         i_n = cmd.index('num')
         movie_id = cmd[len('/seance'): i_n]
@@ -67,19 +70,23 @@ def display_seance(bot, payload, cmd, chat_id):
 
 
 def display_cinema(bot, payload, cmd, chat_id):
+    bot.sendChatAction(chat_id, action='typing')
+
     if 'callback_query' in payload:
         index_of_v = cmd.index('v')
-        cinema_id = int(cmd[len('/cinema'): index_of_v])
+        cinema_id = int(cmd[len('/show'): index_of_v])
         number_to_display = int(cmd[index_of_v + 1:])
         send_reply(bot, chat_id, get_cinema_movies,
-                   cinema_id, number_to_display)
+                   cinema_id, number_to_display,
+                   success=int(payload['callback_query']['id']))
     else:
-        cinema_id = int(cmd[len('/cinema'):])
+        cinema_id = int(cmd[len('/show'):])
         send_reply(bot, chat_id, get_cinema_movies, cinema_id,
                    settings.FILMS_TO_DISPLAY)
 
 
 def display_movies(bot, payload, cmd, chat_id):
+    bot.sendChatAction(chat_id, action='typing')
     if 'callback_query' in payload:
         number_to_display = int(cmd[7:len(cmd)])
         send_reply(bot, chat_id, display_running_movies,
@@ -91,6 +98,7 @@ def display_movies(bot, payload, cmd, chat_id):
 
 
 def display_seances_cinema(bot, payload, cmd, chat_id):
+    bot.sendChatAction(chat_id, action='typing')
     index_of_m = cmd.index('m')
     cinema_id = cmd[2:index_of_m]
 
@@ -108,12 +116,12 @@ def display_seances_cinema(bot, payload, cmd, chat_id):
 
 
 def display_schedule(bot, payload, cmd, chat_id):
-
     def _send_company_offers(bot, chat_id):
         template = settings.JINJA_ENVIRONMENT.get_template('offers.md')
         msg = template.render({'finger': settings.SIGN_FINGER})
         bot.sendMessage(chat_id, msg)
 
+    bot.sendChatAction(chat_id, action='typing')
     schedule_id = cmd[9: len(cmd)]
     telegram_user_id = payload['message']['from']['id']
 

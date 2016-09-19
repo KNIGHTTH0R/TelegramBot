@@ -64,7 +64,7 @@ def get_nearest_cinemas(bot, chat_id, number_of_cinemas):
         cinemas.append(
             Cinema(
                 cinema['shortTitle'],
-                '/cinema{}'.format(cinema['id']),
+                '/show{}'.format(cinema['id']),
                 subways
             )
         )

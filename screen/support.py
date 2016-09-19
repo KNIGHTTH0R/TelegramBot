@@ -6,6 +6,7 @@ from validate_email import validate_email
 from telepot.namedtuple import ReplyKeyboardMarkup, KeyboardButton
 
 from google.appengine.api import mail
+from google.appengine.ext import deferred
 
 import settings
 
@@ -30,7 +31,7 @@ def send_approved_mail(text):
 def mail_markup(text):
     markup = start_markup()
     try:
-        send_approved_mail(text=text)
+        deferred.defer(send_approved_mail, text)
     except Exception as e:
         import logging
         logging.info(e.message)
@@ -201,7 +202,7 @@ def msg_generator(telegram_bot, chat_id, msg, texts=None,
 
 def support_generation(cmd, d, bot, chat_id, message_id):
     for k, v in d.iteritems():
-        if cmd.startswith(k.decode('utf-8')):
+        if cmd.startswith(k.decode('utf-8').lower()):
             msg_generator(bot, chat_id, v.msg, message_id=message_id,
                           texts=v.texts, markup=v.markup)
             return True
