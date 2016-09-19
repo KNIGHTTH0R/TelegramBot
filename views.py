@@ -87,7 +87,7 @@ def make_instruction():
         display_seances_cinema: ['/c'],
         display_schedule: ['/schedule'],
         display_info_full: ['/info_full'],
-        display_info: ['/info'],
+        display_info: ['/info', 'помощь'.decode('utf-8')],
         display_return: ['/return', 'возврат'.decode('utf-8')]
     })
 
