@@ -68,24 +68,25 @@ def parse(request, bot, chat_id, tuid):
 
 
 def detect_instruction(instructions, cmd):
-    for k, v in instructions.iteritems():
-        if cmd.startswith(k):
-            return v
+    for f, v in instructions.iteritems():
+        for w in v:
+            if cmd.startswith(w):
+                return f
 
 
 def make_instruction():
     return OrderedDict({
-        '/start': display_help,
-        '/help': display_help,
-        '/seance': display_seance,
-        '/nearest': display_nearest,
-        '/cinema': display_cinema,
-        '/movies': display_movies,
-        '/c': display_seances_cinema,
-        '/schedule': display_schedule,
-        '/info_full': display_info_full,
-        '/info': display_info,
-        '/return': display_return,
+        display_help: ['/start', '/help'],
+        display_seance: ['/seance'],
+        display_nearest: ['/nearest', 'рядом'.decode('utf-8'),
+                          'ближайшие'.decode('utf-8')],
+        display_cinema: ['/cinema'],
+        display_movies: ['/movies', 'фильмы'.decode('utf-8')],
+        display_seances_cinema: ['/c'],
+        display_schedule: ['/schedule'],
+        display_info_full: ['/info_full'],
+        display_info: ['/info'],
+        display_return: ['/return', 'возврат'.decode('utf-8')]
     })
 
 
@@ -138,7 +139,9 @@ class CommandReceiveView(webapp2.RequestHandler):
                     telegram_bot.sendMessage(
                         chat_id, settings.THANK_FOR_INFORMATION_AGAIN)
                 # nothing else should be displayed (after location)
-                if prev_cmd.cmd.startswith('/nearest'):
+
+                if (detect_instruction(instructions, prev_cmd.cmd) ==
+                        display_nearest):
                     send_reply(telegram_bot, chat_id, get_nearest_cinemas,
                                telegram_bot, chat_id,
                                settings.CINEMA_TO_SHOW)
@@ -151,6 +154,7 @@ class CommandReceiveView(webapp2.RequestHandler):
         elif cmd is None:
             return
 
+        cmd = cmd.lower()
         func = detect_instruction(instructions, cmd)
         if func:
             func(telegram_bot, payload, cmd, chat_id)

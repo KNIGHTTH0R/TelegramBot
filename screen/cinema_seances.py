@@ -105,21 +105,30 @@ def display_cinema_seances(cinema_id, movie_id, day):
             continue
         seances = []
         for s in info['schedules']:
+            m_p = (s['minPrice'] if s['minPrice']
+                   else settings.DO_NOT_KNOW)
+
             if _calculate_is_onsale(s['startTime']):
                 seances.append(f(settings.SIGN_TIP, s['time'],
-                                 s['minPrice'], int(s['id'])))
-
+                                 m_p, int(s['id'])))
             else:
-                seances.append(f(settings.SIGN_TIP, s['time'],
-                                 s['minPrice'], 0))
+                seances.append(f(settings.SIGN_TIP, s['time'], m_p, 0))
 
         markup = _construct_markup(cinema_id, movie_id, day)
         template = settings.JINJA_ENVIRONMENT.get_template('cinema_seances.md')
-        return template.render(
-            {'title': info['movie']['title'],
-             'seances': seances,
-             'place': place}
-        ), markup
+
+        if day_str:
+            day_str = day_str.decode('utf-8')
+            day_str = '{}.{}.{}'.format(day_str[:2], day_str[2:4], day_str[4:])
+        else:
+            day_str = ''
+
+        return template.render({
+            'title': info['movie']['title'],
+            'seances': seances,
+            'place': place,
+            'date': day_str
+        }), markup
 
     return '/c{}m{}  {}'.decode('utf-8').format(
         cinema_id, movie_id, settings.NO_SEANCE

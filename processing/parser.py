@@ -73,6 +73,7 @@ def parser(text):
 
 
 def detect_time(text):
+    # TODO: write some lewinstein distance here
     n = datetime.utcnow()
     for k, ws in when_nearest.iteritems():
         for w in ws:
