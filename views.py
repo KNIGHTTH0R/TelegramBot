@@ -69,7 +69,7 @@ def parse(request, bot, chat_id, tuid):
         return True
 
 
-def detect_instruction(instructions, cmd, bot, chat_id):
+def detect_instruction(instructions, cmd):
     for f, v in instructions.iteritems():
         for w in v:
             if cmd.startswith(w):
@@ -146,7 +146,7 @@ class CommandReceiveView(webapp2.RequestHandler):
                         chat_id, settings.THANK_FOR_INFORMATION_AGAIN)
                 # nothing else should be displayed (after location)
 
-                if (detect_instruction(instructions, prev_cmd.cmd, telegram_bot, chat_id) ==
+                if (detect_instruction(instructions, prev_cmd.cmd) ==
                         display_nearest):
                     send_reply(telegram_bot, chat_id, get_nearest_cinemas,
                                telegram_bot, chat_id,
@@ -162,7 +162,7 @@ class CommandReceiveView(webapp2.RequestHandler):
             return
 
         cmd = cmd.lower()
-        func = detect_instruction(instructions, cmd, telegram_bot, chat_id)
+        func = detect_instruction(instructions, cmd)
         if func:
             func(telegram_bot, payload, cmd, chat_id)
             track(tuid, '{} called'.format(func.__name__), func.__name__)
