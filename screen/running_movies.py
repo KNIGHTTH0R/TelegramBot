@@ -76,7 +76,7 @@ def display_running_movies(number_of_movies):
     return process_movies(data, number_of_movies, callback_url)
 
 
-def get_cinema_movies(cinema_id, number_of_movies, bot, chat_id):
+def get_cinema_movies(cinema_id, number_of_movies):
     url = settings.URL_CINEMA_MOVIE.format(cinema_id, settings.KINOHOD_API_KEY)
     with contextlib.closing(urllib2.urlopen(url)) as jf:
         data = json.loads(jf.read())
