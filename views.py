@@ -111,176 +111,176 @@ class CommandReceiveView(webapp2.RequestHandler):
         except ValueError:
             raise endpoints.BadRequestException(message='Invalid request body')
 
-        # try:
-        cmd, is_group, prev_cmd, chat_id = None, False, None, None
-        tuid, message_id = 0, 0
-        if 'message' in payload:
-            tuid = payload['message']['from']['id']
-            chat_id = payload['message']['chat']['id']
-            prev_cmd = get_prev_cmd(chat_id)
-            if payload['message']['chat']['type'] == 'group':
-                is_group = True
-                cmd = payload['message'].get('text')
-                if cmd:
-                    if '@' in cmd:
-                        p = cmd.split('@')
-                        if p[-1].find(settings.bot_username) > -1:
-                            cmd = p[0]
-                        else:
-                            return
+        try:
+            cmd, is_group, prev_cmd, chat_id = None, False, None, None
+            tuid, message_id = 0, 0
+            if 'message' in payload:
+                tuid = payload['message']['from']['id']
+                chat_id = payload['message']['chat']['id']
+                prev_cmd = get_prev_cmd(chat_id)
+                if payload['message']['chat']['type'] == 'group':
+                    is_group = True
+                    cmd = payload['message'].get('text')
+                    if cmd:
+                        if '@' in cmd:
+                            p = cmd.split('@')
+                            if p[-1].find(settings.bot_username) > -1:
+                                cmd = p[0]
+                            else:
+                                return
+                    else:
+                        return
                 else:
-                    return
-            else:
-                cmd = payload['message'].get('text')
-            message_id = payload['message']['message_id']
-            if 'location' in payload['message']:
-                if not get_user(chat_id):
-                    l = payload['message']['location']
-                    deferred.defer(set_user, chat_id, l)
-                    telegram_bot.sendMessage(
-                        chat_id, settings.THANK_FOR_INFORMATION)
-                else:
-                    l = payload['message']['location']
-                    deferred.defer(set_user, chat_id, l)
-                    telegram_bot.sendMessage(
-                        chat_id, settings.THANK_FOR_INFORMATION_AGAIN)
-                # nothing else should be displayed (after location)
+                    cmd = payload['message'].get('text')
+                message_id = payload['message']['message_id']
+                if 'location' in payload['message']:
+                    if not get_user(chat_id):
+                        l = payload['message']['location']
+                        deferred.defer(set_user, chat_id, l)
+                        telegram_bot.sendMessage(
+                            chat_id, settings.THANK_FOR_INFORMATION)
+                    else:
+                        l = payload['message']['location']
+                        deferred.defer(set_user, chat_id, l)
+                        telegram_bot.sendMessage(
+                            chat_id, settings.THANK_FOR_INFORMATION_AGAIN)
+                    # nothing else should be displayed (after location)
 
-                if (detect_instruction(instructions, prev_cmd.cmd) ==
-                        display_nearest):
-                    send_reply(telegram_bot, chat_id, get_nearest_cinemas,
-                               telegram_bot, chat_id,
-                               settings.CINEMA_TO_SHOW)
+                    if (detect_instruction(instructions, prev_cmd.cmd) ==
+                            display_nearest):
+                        send_reply(telegram_bot, chat_id, get_nearest_cinemas,
+                                   telegram_bot, chat_id,
+                                   settings.CINEMA_TO_SHOW)
+                    return
+
+            if 'callback_query' in payload:
+                cmd = payload['callback_query']['data']
+                chat_id = payload['callback_query']['message']['chat']['id']
+                tuid = payload['callback_query']['message']['from']['id']
+
+            elif cmd is None:
                 return
 
-        if 'callback_query' in payload:
-            cmd = payload['callback_query']['data']
-            chat_id = payload['callback_query']['message']['chat']['id']
-            tuid = payload['callback_query']['message']['from']['id']
+            cmd = cmd.lower()
+            func = detect_instruction(instructions, cmd)
+            if func:
+                func(telegram_bot, payload, cmd, chat_id)
+                track(tuid, '{} called'.format(func.__name__), func.__name__)
 
-        elif cmd is None:
-            return
+            elif (prev_cmd and prev_cmd.cmd.startswith(
+                    settings.NO_AGAIN.decode('utf-8'))):
+                send_mail_story(telegram_bot, chat_id, settings.NO_AGAIN, cmd)
+                track(tuid, 'send email: {}'.format(settings.NO_AGAIN), 'email')
 
-        cmd = cmd.lower()
-        func = detect_instruction(instructions, cmd)
-        if func:
-            func(telegram_bot, payload, cmd, chat_id)
-            track(tuid, '{} called'.format(func.__name__), func.__name__)
+            elif (prev_cmd and prev_cmd.cmd.startswith(
+                    settings.NO_MAIL_SENDED.decode('utf-8'))):
+                send_mail_story(telegram_bot, chat_id,
+                                settings.NO_MAIL_SENDED, cmd)
+                track(tuid, 'send email: {}'.format(settings.NO_AGAIN), 'email')
 
-        elif (prev_cmd and prev_cmd.cmd.startswith(
-                settings.NO_AGAIN.decode('utf-8'))):
-            send_mail_story(telegram_bot, chat_id, settings.NO_AGAIN, cmd)
-            track(tuid, 'send email: {}'.format(settings.NO_AGAIN), 'email')
+            elif (prev_cmd and prev_cmd.cmd.startswith(
+                    settings.ANOTHER_PAY_ER.decode('utf-8'))):
+                send_mail_story(telegram_bot, chat_id,
+                                settings.ANOTHER_PAY_ER, cmd)
+                track(tuid, 'send email: {}'.format(settings.NO_AGAIN), 'email')
 
-        elif (prev_cmd and prev_cmd.cmd.startswith(
-                settings.NO_MAIL_SENDED.decode('utf-8'))):
-            send_mail_story(telegram_bot, chat_id,
-                            settings.NO_MAIL_SENDED, cmd)
-            track(tuid, 'send email: {}'.format(settings.NO_AGAIN), 'email')
+            elif (prev_cmd and
+                    prev_cmd.cmd.startswith('/seance'.decode('utf-8'))):
+                track(tuid, 'callback seance called', 'seance')
+                i_n, l_n = prev_cmd.cmd.index('num'), len('num')
+                movie_id = prev_cmd.cmd[7: i_n]
+                number_of_seances = prev_cmd.cmd[i_n + l_n: len(prev_cmd.cmd)]
+                response = display_seances_part(cmd, movie_id,
+                                                int(number_of_seances))
+                if response is not None:
+                    telegram_bot.sendMessage(chat_id, response)
 
-        elif (prev_cmd and prev_cmd.cmd.startswith(
-                settings.ANOTHER_PAY_ER.decode('utf-8'))):
-            send_mail_story(telegram_bot, chat_id,
-                            settings.ANOTHER_PAY_ER, cmd)
-            track(tuid, 'send email: {}'.format(settings.NO_AGAIN), 'email')
-
-        elif (prev_cmd and
-                prev_cmd.cmd.startswith('/seance'.decode('utf-8'))):
-            track(tuid, 'callback seance called', 'seance')
-            i_n, l_n = prev_cmd.cmd.index('num'), len('num')
-            movie_id = prev_cmd.cmd[7: i_n]
-            number_of_seances = prev_cmd.cmd[i_n + l_n: len(prev_cmd.cmd)]
-            response = display_seances_part(cmd, movie_id,
-                                            int(number_of_seances))
-            if response is not None:
-                telegram_bot.sendMessage(chat_id, response)
-
-        elif (prev_cmd and
-                prev_cmd.cmd.startswith('/return'.decode('utf-8'))):
-            if prev_cmd.cmd[len('/return'):] == '1':
-                track(tuid, 'return: validation + sending', 'return')
-                cmd = str(cmd).strip()
-                if validate_email(cmd):
-                    deferred.defer(set_return_ticket, chat_id, email=cmd)
-                    # set_return_ticket(chat_id, email=cmd)
+            elif (prev_cmd and
+                    prev_cmd.cmd.startswith('/return'.decode('utf-8'))):
+                if prev_cmd.cmd[len('/return'):] == '1':
+                    track(tuid, 'return: validation + sending', 'return')
+                    cmd = str(cmd).strip()
+                    if validate_email(cmd):
+                        deferred.defer(set_return_ticket, chat_id, email=cmd)
+                        # set_return_ticket(chat_id, email=cmd)
+                    else:
+                        telegram_bot.sendMessage(chat_id,
+                                                 settings.INVALID_EMAIL)
+                        deferred.defer(set_prev_cmd, chat_id, cmd)
+                        return
                 else:
-                    telegram_bot.sendMessage(chat_id,
-                                             settings.INVALID_EMAIL)
-                    deferred.defer(set_prev_cmd, chat_id, cmd)
-                    return
-            else:
-                try:
-                    track(tuid, 'return: need email', 'return')
-                    order_numb = int(cmd)
+                    try:
+                        track(tuid, 'return: need email', 'return')
+                        order_numb = int(cmd)
 
-                    deferred.defer(
-                        set_return_ticket,
-                        chat_id,
-                        number=order_numb
+                        deferred.defer(
+                            set_return_ticket,
+                            chat_id,
+                            number=order_numb
+                        )
+
+                        deferred.defer(set_prev_cmd, chat_id, '/return' + '1')
+                        telegram_bot.sendMessage(chat_id,
+                                                 settings.ENTER_ORDER_EMAIL)
+                    except Exception:
+                        telegram_bot.sendMessage(chat_id,
+                                                 settings.INVALID_ORDER)
+                        deferred.defer(set_prev_cmd, chat_id, cmd)
+                    return
+
+                rt = get_return_ticket(chat_id)
+                if rt.number and rt.email:
+
+                    r = requests.post(
+                        settings.URL_CANCEL_TOKEN,
+                        json={'order': rt.number, 'email': rt.email}
                     )
 
-                    deferred.defer(set_prev_cmd, chat_id, '/return' + '1')
-                    telegram_bot.sendMessage(chat_id,
-                                             settings.ENTER_ORDER_EMAIL)
-                except Exception:
-                    telegram_bot.sendMessage(chat_id,
-                                             settings.INVALID_ORDER)
-                    deferred.defer(set_prev_cmd, chat_id, cmd)
-                return
-
-            rt = get_return_ticket(chat_id)
-            if rt.number and rt.email:
-
-                r = requests.post(
-                    settings.URL_CANCEL_TOKEN,
-                    json={'order': rt.number, 'email': rt.email}
-                )
-
-                r_json = r.json()
-                if r_json['error'] != 0:
-                    telegram_bot.sendMessage(chat_id,
-                                             settings.CANCEL_ERROR)
-                else:
-                    if r_json['data']['error'] != 0:
-                        track(tuid, 'error in canceling', 'return')
+                    r_json = r.json()
+                    if r_json['error'] != 0:
                         telegram_bot.sendMessage(chat_id,
                                                  settings.CANCEL_ERROR)
                     else:
-                        track(tuid, 'returning correct', 'return')
-                        token = r_json['data']['token']
-                        url = settings.URL_CANCEL_TICKET.format(token)
-                        cancel_r = requests.get(url)
-                        telegram_bot.sendMessage(chat_id, cancel_r.json())
+                        if r_json['data']['error'] != 0:
+                            track(tuid, 'error in canceling', 'return')
+                            telegram_bot.sendMessage(chat_id,
+                                                     settings.CANCEL_ERROR)
+                        else:
+                            track(tuid, 'returning correct', 'return')
+                            token = r_json['data']['token']
+                            url = settings.URL_CANCEL_TICKET.format(token)
+                            cancel_r = requests.get(url)
+                            telegram_bot.sendMessage(chat_id, cancel_r.json())
+                else:
+                    telegram_bot.sendMessage(chat_id,
+                                             settings.ERROR_SERVER_CONN)
+                    track(tuid, 'invalid email or any else', 'return')
             else:
-                telegram_bot.sendMessage(chat_id,
-                                         settings.ERROR_SERVER_CONN)
-                track(tuid, 'invalid email or any else', 'return')
-        else:
-            if support_generation(cmd, support_dict, telegram_bot,
-                                  chat_id, message_id):
-                deferred.defer(set_prev_cmd, chat_id, cmd)
-                track(tuid, 'support called', 'support')
-                return
+                if support_generation(cmd, support_dict, telegram_bot,
+                                      chat_id, message_id):
+                    deferred.defer(set_prev_cmd, chat_id, cmd)
+                    track(tuid, 'support called', 'support')
+                    return
 
-            elif parse(cmd.encode('utf-8'), telegram_bot,
-                       chat_id, tuid):
-                deferred.defer(set_prev_cmd, chat_id, cmd)
-                track(tuid, 'parse called', 'parse')
-                return
+                elif parse(cmd.encode('utf-8'), telegram_bot,
+                           chat_id, tuid):
+                    deferred.defer(set_prev_cmd, chat_id, cmd)
+                    track(tuid, 'parse called', 'parse')
+                    return
 
-            else:
-                if not is_group:
-                    telegram_bot.sendMessage(
-                        chat_id, settings.DONT_UNDERSTAND,
-                        parse_mode='Markdown',
-                        reply_markup=start_markup())
-                    track(tuid, 'miss understanding', 'invalid')
+                else:
+                    if not is_group:
+                        telegram_bot.sendMessage(
+                            chat_id, settings.DONT_UNDERSTAND,
+                            parse_mode='Markdown',
+                            reply_markup=start_markup())
+                        track(tuid, 'miss understanding', 'invalid')
 
-        if cmd:
-            prev_cmd = get_prev_cmd(chat_id)
-            if prev_cmd and not (cmd[:3]).startswith(prev_cmd.cmd):
-                deferred.defer(set_prev_cmd, chat_id, cmd)
+            if cmd:
+                prev_cmd = get_prev_cmd(chat_id)
+                if prev_cmd and not (cmd[:3]).startswith(prev_cmd.cmd):
+                    deferred.defer(set_prev_cmd, chat_id, cmd)
 
-        # except Exception as ex:
-        #     raise endpoints.BadRequestException(ex.message)
-        # return
+        except Exception as ex:
+            raise endpoints.BadRequestException(ex.message)
+        return
