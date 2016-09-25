@@ -5,50 +5,33 @@ import json
 from google.appengine.ext import ndb
 
 
+def set_o(o, kwargs):
+    for k, v in kwargs.iteritems():
+        if hasattr(o, k):
+            if isinstance(v, dict):
+                v = json.dumps(v)
+            setattr(o, k, v)
+    return o
+
+
+def set_model(cls, pk, **kwargs):
+    o = cls.get_or_insert(str(pk))
+    o = set_o(o, kwargs)
+    o.put()
+    return o
+
+
+def get_model(cls, pk):
+    o = cls.get_by_id(str(pk))
+    return o
+
+
 class UserProfile(ndb.Model):
     location = ndb.JsonProperty()
-
-
-def set_user(chat_id, location):
-    u = UserProfile.get_or_insert(str(chat_id))
-    u.location = json.dumps(location)
-    u.put()
-
-
-def get_user(chat_id):
-    return UserProfile.get_by_id(str(chat_id))
+    cmd = ndb.TextProperty()
+    state = ndb.TextProperty(default='base')
 
 
 class ReturnTicket(ndb.Model):
     number = ndb.IntegerProperty()
     email = ndb.StringProperty()
-
-
-def get_return_ticket(chat_id):
-    return ReturnTicket.get_by_id(str(chat_id))
-
-
-def set_return_ticket(chat_id, number=None, email=None):
-    t = ReturnTicket.get_or_insert(str(chat_id))
-
-    if number:
-        t.number = number
-
-    if email:
-        t.email = email
-
-    t.put()
-
-
-class PrevCmd(ndb.Model):
-    cmd = ndb.TextProperty()
-
-
-def set_prev_cmd(chat_id, text):
-    c = PrevCmd.get_or_insert(str(chat_id))
-    c.cmd = text
-    c.put()
-
-
-def get_prev_cmd(chat_id):
-    return PrevCmd.get_by_id(str(chat_id))
