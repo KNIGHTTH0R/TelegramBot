@@ -6,10 +6,16 @@ from screen.running_movies import get_cinema_movies
 
 from processing.parser import parser
 
+from commands import send_reply
+
 import settings
 
 
-def parse(request, bot, chat_id, tuid):
+def parse_afisha(request, bot, chat_id, tuid):
+    pass
+
+
+def parse_films(request, bot, chat_id, tuid):
     def process_what(whats):
         for w in whats:
             message, mark_up, poster = display_movie_info(w['id'], tuid)
@@ -43,3 +49,7 @@ def parse(request, bot, chat_id, tuid):
         send_reply(bot, chat_id, get_cinema_movies,
                    int(cmds['place'][0]['id']), settings.CINEMA_TO_SHOW)
         return True
+
+
+def parse_cinemas(request, bot, chat_id, tuid):
+    pass
