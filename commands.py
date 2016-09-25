@@ -1,19 +1,27 @@
 # coding: utf-8
 
 import urllib
+import requests
 
 import botan
 
 from telepot.namedtuple import InlineKeyboardMarkup
+from google.appengine.ext import deferred
+from validate_email import validate_email
 
 from draw import draw_cinemahall
 
+from screen.seances import display_seances_part
 from screen.cinemas import get_nearest_cinemas
 from screen.seances import get_seances
 from screen.help import get_help
 from screen.movie_info import display_movie_info
 from screen.cinema_seances import display_cinema_seances
 from screen.running_movies import get_cinema_movies, display_running_movies
+
+from model import set_model, get_model
+from model import UserProfile, ReturnTicket
+
 
 import settings
 
@@ -97,6 +105,36 @@ def display_movies(bot, payload, cmd, chat_id):
                    display_running_movies, settings.FILMS_TO_DISPLAY)
 
 
+def films_category(bot, payload, cmd, chat_id):
+    """
+    it is mean that search in parse will be in films determination mode
+    :param chat_id: pk
+    :return:
+    """
+    deferred.defer(set_model, cls=UserProfile, pk=chat_id, state='films')
+    display_movies(bot, payload, cmd, chat_id)
+
+
+def cinema_category(bot, payload, cmd, chat_id):
+    """
+    it is mean that in search in parse func will be in cinema scenario
+    :param chat_id: pk
+    :return:
+    """
+    deferred.defer(set_model, cls=UserProfile, pk=chat_id, state='cinema')
+    pass
+
+
+def base_category(bot, payload, cmd, chat_id):
+    """
+    it is mean that in search in parse func will be in cinema scenario
+    :param chat_id: pk
+    :return:
+    """
+    deferred.defer(set_model, cls=UserProfile, pk=chat_id, state='base')
+    pass
+
+
 def display_seances_cinema(bot, payload, cmd, chat_id):
     bot.sendChatAction(chat_id, action='typing')
     index_of_m = cmd.index('m')
@@ -142,6 +180,7 @@ def display_schedule(bot, payload, cmd, chat_id):
         _send_company_offers(bot, chat_id)
         bot.sendChatAction(chat_id, 'upload_photo')
         bot.sendPhoto(chat_id, ('hall.bmp', hall_image), reply_markup=markup)
+
     except:
         bot.sendMessage(chat_id, settings.SERVER_NOT_VALID)
 
@@ -172,3 +211,67 @@ def display_info(bot, payload, cmd, chat_id):
 
 def display_return(bot, payload, cmd, chat_id):
     bot.sendMessage(chat_id, settings.ENTER_ORDER_NUMBER)
+
+
+def callback_seance(tuid, bot, chat_id, text, cmd, profile):
+    i_n, l_n = profile.cmd.index('num'), len('num')
+    movie_id = profile.cmd[7: i_n]
+    number_of_seances = profile.cmd[i_n + l_n: len(profile.cmd)]
+    response = display_seances_part(cmd, movie_id, int(number_of_seances))
+    if response is not None:
+        bot.sendMessage(chat_id, response)
+
+
+def callback_return(tuid, bot, chat_id, text, cmd, profile):
+
+    if profile.cmd[len('/return'):] == '1':
+        botan.track(tuid, 'return: validation + sending', 'return')
+        cmd = str(cmd).strip()
+        if validate_email(cmd):
+            deferred.defer(set_model, ReturnTicket, chat_id, email=cmd)
+            # set_model(ReturnTicket, chat_id, email=cmd)
+
+        else:
+            bot.sendMessage(chat_id,
+                                     settings.INVALID_EMAIL)
+            deferred.defer(set_model, UserProfile, chat_id, cmd=cmd)
+            return
+
+    else:
+        try:
+            botan.track(tuid, 'return: need email', 'return')
+            order_numb = int(cmd)
+            deferred.defer(set_model, ReturnTicket, chat_id, number=order_numb)
+            deferred.defer(set_model, UserProfile, chat_id, cmd='/return1')
+            bot.sendMessage(chat_id, settings.ENTER_ORDER_EMAIL)
+        except Exception:
+            bot.sendMessage(chat_id, settings.INVALID_ORDER)
+            deferred.defer(set_model, UserProfile, chat_id, cmd=cmd)
+        return
+
+    rt = get_model(ReturnTicket, chat_id)
+    if rt.number and rt.email:
+
+        r = requests.post(
+            settings.URL_CANCEL_TOKEN,
+            json={'order': rt.number, 'email': rt.email}
+        )
+
+        r_json = r.json()
+        if r_json['error'] != 0:
+            bot.sendMessage(chat_id, settings.CANCEL_ERROR)
+
+        else:
+
+            if r_json['data']['error'] != 0:
+                botan.track(tuid, 'error in canceling', 'return')
+                bot.sendMessage(chat_id, settings.CANCEL_ERROR)
+            else:
+                botan.track(tuid, 'returning correct', 'return')
+                token = r_json['data']['token']
+                url = settings.URL_CANCEL_TICKET.format(token)
+                cancel_r = requests.get(url)
+                bot.sendMessage(chat_id, cancel_r.json())
+    else:
+        bot.sendMessage(chat_id, settings.ERROR_SERVER_CONN)
+        botan.track(tuid, 'invalid email or any else', 'return')
