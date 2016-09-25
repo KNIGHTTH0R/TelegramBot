@@ -11,40 +11,13 @@ from StringIO import StringIO
 
 import pymorphy2
 
-
 from mapping import categories, stop_words, when_nearest, when_week
 from maching import damerau_levenshtein_distance
+
 import settings
 
 
 morph = pymorphy2.MorphAnalyzer()
-
-MIN_VERB_LEN = 5
-
-
-def _substr_sentence(text, ignore):
-    return [w for w in text if w not in ignore]
-
-
-def detect_category(spltd):
-    conf_n = {k: [morph.parse(w.decode('utf-8'))[0].normal_form for w in v]
-              for k, v in categories.iteritems()}
-
-    determ_category = {k: [0, []] for k, v in conf_n.iteritems()}
-
-    for cat, value in conf_n.iteritems():
-        for verb in value:
-            for w in spltd:
-                if (len(w) >= (MIN_VERB_LEN - 1) and
-                        damerau_levenshtein_distance(w, verb) < 2):
-                    determ_category[cat][0] += 1
-                    determ_category[cat][1].append(w)
-
-    cat = max((v, k) for k, v in determ_category.iteritems())
-    if cat[0][0] > 0:
-        spltd = [w for w in spltd if w not in cat[0][1]]
-        return cat[1], spltd
-    return None, spltd
 
 
 def parser(text):
