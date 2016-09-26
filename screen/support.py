@@ -1,6 +1,7 @@
 # coding: utf-8
 
 from collections import namedtuple
+import inspect
 
 from validate_email import validate_email
 from telepot.namedtuple import ReplyKeyboardMarkup, KeyboardButton
@@ -8,12 +9,32 @@ from telepot.namedtuple import ReplyKeyboardMarkup, KeyboardButton
 from google.appengine.api import mail
 from google.appengine.ext import deferred
 
+from commands import films_category, cinema_category, base_category
+
 import settings
 
 
 def start_markup():
     return ReplyKeyboardMarkup(keyboard=[
-        [KeyboardButton(text=settings.SUPPORT_INFO)],
+        [KeyboardButton(text=settings.FILMS),
+         KeyboardButton(text=settings.CINEMA)],
+        [KeyboardButton(text=settings.SUPPORT_INFO)]
+    ])
+
+
+def film_markup():
+    return ReplyKeyboardMarkup(keyboard=[
+        [KeyboardButton(text=settings.AFISHA),
+         KeyboardButton(text=settings.CINEMA)],
+        [KeyboardButton(text=settings.SUPPORT_INFO)]
+    ])
+
+
+def cinema_markup():
+    return ReplyKeyboardMarkup(keyboard=[
+        [KeyboardButton(text=settings.FILMS),
+         KeyboardButton(text=settings.AFISHA)],
+        [KeyboardButton(text=settings.SUPPORT_INFO)]
     ])
 
 
@@ -39,9 +60,10 @@ def mail_markup(text):
     return markup
 
 
-def send_mail_story(telegram_bot, chat_id, text, cmd):
+# @botan.wrap_track
+def send_mail_story(tuid, bot, chat_id, text, cmd, profile):
     if not validate_email(cmd.encode('utf-8')):
-        telegram_bot.sendMessage(chat_id, settings.INVALID_EMAIL)
+        bot.sendMessage(chat_id, settings.INVALID_EMAIL)
         return
 
     markup = mail_markup('{} my email: {}'.format(
@@ -50,10 +72,19 @@ def send_mail_story(telegram_bot, chat_id, text, cmd):
     ))
 
     if markup:
-        telegram_bot.sendMessage(chat_id, settings.NEED_CONTACT, markup)
+        bot.sendMessage(chat_id, settings.NEED_CONTACT, markup)
 
 
-Msg = namedtuple('Msg', ['msg', 'texts', 'markup'])
+class Msg(namedtuple('Msg', ['msg', 'texts', 'markup', 'func', 'style'])):
+    __slots__ = ()
+
+    def __new__(cls, *args, **kwargs):
+        args_list = inspect.getargspec(
+            super(Msg, cls).__new__
+        ).args[len(args) + 1:]
+        params = {key: kwargs.get(key) for key in args_list + kwargs.keys()}
+        return super(Msg, cls).__new__(cls, *args, **params)
+
 
 support_dict = {
     settings.SUPPORT_INFO: Msg(
@@ -61,6 +92,27 @@ support_dict = {
         [settings.PROBLEM_BUY_TICKET,
          settings.FAIL_CODE_WORD, settings.ANOTHER],
         None
+    ),
+
+    settings.FILMS: Msg(
+        settings.FILM_INFO,
+        None,
+        film_markup(),
+        films_category,
+    ),
+
+    settings.AFISHA: Msg(
+        settings.AFISHA_INFO,
+        None,
+        start_markup(),
+        base_category,
+    ),
+
+    settings.CINEMA: Msg(
+        settings.CINEMA_INFO,
+        None,
+        cinema_markup(),
+        cinema_category,
     ),
 
     settings.FAIL_CODE_WORD: Msg(
@@ -180,17 +232,27 @@ support_dict = {
 }
 
 
-def keyboard_generator(texts):
+def keyboard_generator(texts, style):
+
+    if style:
+        v, h = map(int, style.split(':'))
+
     keyboard = []
     for text in texts:
-        keyboard.append([KeyboardButton(text=text)])
+        if not style or len(keyboard) == 0 or (style and h == 0):
+            keyboard.append([KeyboardButton(text=text)])
+        else:
+            if h > 0:
+                keyboard[0].append(KeyboardButton(text=text))
+                h -= 1
+
     return ReplyKeyboardMarkup(keyboard=keyboard)
 
 
 def msg_generator(telegram_bot, chat_id, msg, texts=None,
-                  message_id=None, markup=None):
+                  message_id=None, markup=None, style=None):
     if markup is None:
-        markup = keyboard_generator(texts) if texts else None
+        markup = keyboard_generator(texts, style) if texts else None
 
     telegram_bot.sendMessage(
         chat_id, msg,
@@ -200,10 +262,20 @@ def msg_generator(telegram_bot, chat_id, msg, texts=None,
     )
 
 
-def support_generation(cmd, d, bot, chat_id, message_id):
-    for k, v in d.iteritems():
-        if cmd.startswith(k.decode('utf-8').lower()):
-            msg_generator(bot, chat_id, v.msg, message_id=message_id,
-                          texts=v.texts, markup=v.markup)
+# @botan.wrap_track
+def support_generation(cmd, bot, chat_id, message_id):
+    for k, v in support_dict.iteritems():
+        k = k.decode('utf-8').lower()
+        if cmd.startswith(k):
+
+            if v.func:
+                v.func(bot, {}, cmd, chat_id)
+
+            msg_generator(
+                bot, chat_id, v.msg,
+                message_id=message_id if not v.func else None,
+                texts=v.texts, markup=v.markup, style=v.style
+            )
+
             return True
     return False

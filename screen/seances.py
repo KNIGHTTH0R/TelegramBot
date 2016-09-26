@@ -6,7 +6,8 @@ import json
 
 from telepot.namedtuple import InlineKeyboardMarkup
 
-from model import get_user
+from model import get_model
+from model import UserProfile
 
 import settings
 
@@ -37,7 +38,7 @@ def get_data(url):
 
 def get_seances(chat_id, movie_id, number_of_seances):
 
-    u = get_user(chat_id)
+    u = get_model(UserProfile, chat_id)
 
     if u:
         l = json.loads(u.location)

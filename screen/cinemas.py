@@ -6,7 +6,8 @@ import contextlib
 import urllib2
 import json
 
-from model import get_user
+from model import get_model
+from model import UserProfile
 
 import settings
 
@@ -24,7 +25,7 @@ def get_data(url):
 
 def get_nearest_cinemas(bot, chat_id, number_of_cinemas):
 
-    u = get_user(chat_id)
+    u = get_model(UserProfile, chat_id)
     if not u.location:
         bot.sendMessage(chat_id, settings.CANNOT_FIND_YOU)
         return None, None
