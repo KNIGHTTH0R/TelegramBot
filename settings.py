@@ -29,7 +29,9 @@ JINJA_ENVIRONMENT = jinja2.Environment(
 TIMEZONE = 2
 bot_username = 'KinohodBot'
 KINOHOD_API_KEY = 'f056d104-abcd-3ab7-9132-cfcf3a098bc4'
-TELEGRAM_BOT_TOKEN = '209622038:AAGuPWWiLqXXAZlEcfh6tC85DKtHslVUJdA'
+# TELEGRAM_BOT_TOKEN = '209622038:AAGuPWWiLqXXAZlEcfh6tC85DKtHslVUJdA'  # production
+TELEGRAM_BOT_TOKEN = '220697123:AAGHvA89SQ3qVCXyafTB9GObKa7E1f9xRrs'
+# BOTAN_TOKEN = 'DXKQu6IQbjGwX7HSdLP1OCNHMkOoX0ak'  # production
 BOTAN_TOKEN = 'ip2CSBT89XNqLbzAjcaF4vw6Iyc9LJIx'
 
 
@@ -55,6 +57,7 @@ BASE_KINOHOD = 'https://kinohod.ru'
 
 FILMS_TO_DISPLAY = 10
 CINEMAS_TO_DISPLAY = 10
+FILMS_DISPLAY_INFO = 5
 CINEMA_TO_SHOW = 10
 SEANCES_TO_DISPLAY = 10
 
@@ -88,6 +91,7 @@ MORE_INFO = 'Подробнее о предложениях'
 TREILER = 'Трейлер'
 DONT_UNDERSTAND = 'Я Вас не понимаю {}'.decode('utf-8').format(SIGN_SCREAMING)
 CINEMA_NOT_VALID = 'Кинотеатр не доступен сейчас'
+CINEMA_NOT_FOUND = 'Не удалось найти кинотеатр'
 ON_TOMORROW = 'На завтра'
 ON_A_TOMORROW = 'На послезавтра'
 ON_TODAY = 'На сегодня'

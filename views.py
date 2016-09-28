@@ -5,7 +5,7 @@ import json
 import endpoints
 import webapp2
 
-from collections import OrderedDict
+from collections import OrderedDict, namedtuple
 
 import telepot
 
@@ -20,14 +20,15 @@ from commands import (display_nearest, display_seance, send_reply,
                       display_info, display_help,
                       display_return, callback_return)
 
-from screen.support import send_mail_story, start_markup, support_generation
+from screen.support import (send_mail_story, start_markup,
+                            film_markup, cinema_markup, support_generation)
 
 from screen.cinemas import get_nearest_cinemas
 
 from model import UserProfile
 from model import set_model, get_model
 
-from view_processing import parse_afisha, parse_cinemas, parse_films
+from view_processing import display_afisha, display_films, display_cinemas
 
 import settings
 
@@ -150,33 +151,31 @@ class CommandReceiveView(webapp2.RequestHandler):
                     cb_fn(tuid, bot, chat_id, profile.cmd, cmd, profile)
 
         else:
+            Schema = namedtuple('Schema', ['reply', 'markup'])
 
             s = {
-                'base': parse_afisha,
-                'films': parse_films,
-                'cinema': parse_cinemas
+                'base': Schema(display_afisha, start_markup),
+                'films': Schema(display_films, film_markup),
+                'cinema': Schema(display_cinemas, cinema_markup)
             }
 
-            if support_generation(cmd, bot,
-                                  chat_id, message_id):
-                deferred.defer(set_model, UserProfile, chat_id, cmd=cmd)
-                return
+            if support_generation(cmd, bot, chat_id, message_id):
+                track(tuid=tuid,
+                      message=format(s[profile.state].reply.__name__),
+                      name='support')
 
-            elif s[profile.state](cmd.encode('utf-8'), bot, chat_id, tuid):
-                track(tuid, format(s[profile.state].__name__), 'parsing')
-                pass
-
-            # elif parse(cmd.encode('utf-8'), bot, chat_id, tuid):
-            #     deferred.defer(set_model, UserProfile, chat_id, cmd=cmd)
-            #     track(tuid, 'parse called', 'parse')
-            #     return
+            elif s[profile.state].reply(cmd.encode('utf-8'),
+                                        bot, chat_id, tuid):
+                track(tuid=tuid,
+                      message=format(s[profile.state].reply.__name__),
+                      name='parsing')
 
             else:
                 if not is_group:
                     bot.sendMessage(
                         chat_id, settings.DONT_UNDERSTAND,
                         parse_mode='Markdown',
-                        reply_markup=start_markup())
+                        reply_markup=s[profile.state].markup())
                     track(tuid, 'miss understanding', 'invalid')
 
         deferred.defer(set_model, UserProfile, chat_id, cmd=cmd)

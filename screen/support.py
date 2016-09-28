@@ -22,6 +22,22 @@ def start_markup():
     ])
 
 
+def film_markup():
+    return ReplyKeyboardMarkup(keyboard=[
+        [KeyboardButton(text=settings.AFISHA),
+         KeyboardButton(text=settings.CINEMA)],
+        [KeyboardButton(text=settings.SUPPORT_INFO)]
+    ])
+
+
+def cinema_markup():
+    return ReplyKeyboardMarkup(keyboard=[
+        [KeyboardButton(text=settings.FILMS),
+         KeyboardButton(text=settings.AFISHA)],
+        [KeyboardButton(text=settings.SUPPORT_INFO)]
+    ])
+
+
 def send_approved_mail(text):
     # [START send_mail]
 
@@ -80,10 +96,9 @@ support_dict = {
 
     settings.FILMS: Msg(
         settings.FILM_INFO,
-        [settings.AFISHA, settings.CINEMA, settings.SUPPORT_INFO],
         None,
+        film_markup(),
         films_category,
-        '2:1'
     ),
 
     settings.AFISHA: Msg(
@@ -95,10 +110,9 @@ support_dict = {
 
     settings.CINEMA: Msg(
         settings.CINEMA_INFO,
-        [settings.FILMS, settings.AFISHA, settings.SUPPORT_INFO],
         None,
+        cinema_markup(),
         cinema_category,
-        '2:1'
     ),
 
     settings.FAIL_CODE_WORD: Msg(
