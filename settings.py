@@ -65,6 +65,8 @@ TODAY = 0
 TOMORROW = 1
 A_TOMORROW = 2
 
+SIGN_CALENDAR = '\xF0\x9F\x93\x85'.decode('utf-8')
+SIGN_NEWSPAPER = '\xF0\x9F\x93\xB0'.decode('utf-8')
 SIGN_SCREAMING = '\xF0\x9F\x98\xB1'.decode('utf-8')
 SIGN_WRITE = '\xF0\x9F\x92\xAC'.decode('utf-8')
 SIGN_VIDEO = '\xF0\x9F\x8E\xA5'.decode('utf-8')
@@ -170,6 +172,7 @@ SUPPORT_INFO = 'Обращение в службу поддержки'
 FILMS = 'Фильмы'
 FILM_INFO = 'Вам под силу написать название фильма, можно его часть или же жанр - мы очень постараемся вам угодить'
 CINEMA = 'Кинотеатры'
+CINEMA_NAME = '*Кинотеатр:* {}'
 CINEMA_INFO = 'Вам выпадает шанс ввести адресс или станцию метро или хоть что-нибудь, что говорит о месте кинотеатра, в который вы хотите'
 AFISHA = 'Афиша'
 AFISHA_INFO = 'В таком режиме вы можете писать произвольные высказывания на тему выдачи актуальных фильмов'

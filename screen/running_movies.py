@@ -5,6 +5,8 @@ import urllib2
 import gzip
 import json
 
+from collections import namedtuple
+
 from datetime import datetime
 from StringIO import StringIO
 
@@ -12,8 +14,16 @@ from telepot.namedtuple import InlineKeyboardMarkup
 
 import settings
 
+IMovieCinema = namedtuple('IMovieCinema', ['title', 'link', 'link_info'])
 
-def process_movies(data, number_of_movies, callback_url):
+
+def process_movies(data, number_of_movies, callback_url,
+                   next_url='/info', **kwargs):
+
+    cinema_id = kwargs.get('cinema_id')
+    separator = kwargs.get('separator')
+    next_info_url = kwargs.get('info_url')
+
     videos, premiers = [], []
 
     to_show = settings.FILMS_TO_DISPLAY
@@ -23,6 +33,7 @@ def process_movies(data, number_of_movies, callback_url):
     elif len(data) < settings.FILMS_TO_DISPLAY:
         to_show = len(data)
 
+    expanded_info = False
     for film_counter in xrange(number_of_movies - to_show,
                                number_of_movies):
 
@@ -36,7 +47,18 @@ def process_movies(data, number_of_movies, callback_url):
                                  settings.FILMS_TO_DISPLAY)))
                     ]]))
 
-        f_info = settings.Row(settings.uncd(movie['title']), movie['id'])
+        if cinema_id and separator and next_info_url:
+            expanded_info = True
+
+            link = '{}{}{}{}'.format(next_url, cinema_id, separator, movie['id'])
+            f_info = IMovieCinema(
+                movie['title'], link,
+                '{}{}'.format(next_info_url, movie['id'])
+            )
+
+        else:
+            link = '{}{}'.format(next_url, movie['id'])
+            f_info = settings.Row(settings.uncd(movie['title']), link)
 
         if movie['premiereDateRussia']:
             t_str = movie['premiereDateRussia']
@@ -59,11 +81,24 @@ def process_movies(data, number_of_movies, callback_url):
               ))]
     ])
 
-    template = settings.JINJA_ENVIRONMENT.get_template('running_movies.md')
-    return template.render({'videos': videos, 'premiers': premiers,
-                            'sign_video': settings.SIGN_VIDEO,
-                            'sign_tip': settings.SIGN_TIP,
-                            'sign_premier': settings.SIGN_PREMIER}), mark_up
+    if expanded_info:
+        template = (settings.JINJA_ENVIRONMENT.
+                    get_template('running_movies_ext.md'))
+    
+        msg = template.render({'videos': videos, 'premiers': premiers,
+                               'sign_video': settings.SIGN_VIDEO,
+                               'sign_tip': settings.SIGN_TIP,
+                               'sign_calendar': settings.SIGN_CALENDAR,
+                               'sign_newspaper': settings.SIGN_NEWSPAPER,
+                               'sign_premier': settings.SIGN_PREMIER})
+    else:
+        template = settings.JINJA_ENVIRONMENT.get_template('running_movies.md')
+        msg = template.render({'videos': videos, 'premiers': premiers,
+                               'sign_video': settings.SIGN_VIDEO,
+                               'sign_tip': settings.SIGN_TIP,
+                               'sign_premier': settings.SIGN_PREMIER})
+
+    return msg, mark_up
 
 
 def display_running_movies(number_of_movies):
@@ -87,4 +122,6 @@ def get_cinema_movies(cinema_id, number_of_movies):
     if len(data) < number_of_movies:
         number_of_movies = len(data)
 
-    return process_movies(data, number_of_movies, callback_url)
+    return process_movies(data, number_of_movies, callback_url,
+                          next_url='/c', info_url='/info',
+                          cinema_id=cinema_id, separator='m')

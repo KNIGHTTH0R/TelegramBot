@@ -16,7 +16,7 @@ from screen.cinemas import get_nearest_cinemas
 from screen.seances import get_seances
 from screen.help import get_help
 from screen.movie_info import display_movie_info
-from screen.cinema_seances import display_cinema_seances
+from screen.cinema_seances import detect_cinema_seances
 from screen.running_movies import get_cinema_movies, display_running_movies
 
 from model import set_model, get_model
@@ -143,13 +143,13 @@ def display_seances_cinema(bot, payload, cmd, chat_id):
     if 'callback_query' in payload:
         index_of_d = cmd.index('d')
         movie_id, d = cmd[index_of_m + 1:index_of_d], cmd[-1]
-        send_reply(bot, chat_id, display_cinema_seances,
+        send_reply(bot, chat_id, detect_cinema_seances,
                    cinema_id, movie_id, d,
                    success=int(payload['callback_query']['id']))
     else:
         movie_id = cmd[index_of_m + 1:len(cmd)]
         d = settings.TODAY
-        send_reply(bot, chat_id, display_cinema_seances,
+        send_reply(bot, chat_id, detect_cinema_seances,
                    cinema_id, movie_id, d)
 
 
@@ -253,8 +253,7 @@ def callback_return(tuid, bot, chat_id, text, cmd, profile):
 
         r = requests.post(
             settings.URL_CANCEL_TOKEN,
-            json={'order': rt.number, 'email': rt.email}
-        )
+            json={'order': rt.number, 'email': rt.email})
 
         r_json = r.json()
         if r_json['error'] != 0:

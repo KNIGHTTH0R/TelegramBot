@@ -129,16 +129,16 @@ class Parser(object):
                                     base_actors_prods.append(f_w)
 
                     if base_actors_prods:
-                        self.cmds.actors = [v]
+                        self.data.actors = [v]
                 else:
                     for f_w in actors_prods:
                         if f_w in base_actors_prods:
-                            self.cmds.actors.append(v)
+                            self.data.actors.append(v)
 
-        if self.cmds.actors:
-            if len(self.cmds.actors) > settings.FILMS_DISPLAY_INFO:
-                self.cmds.actors = sorted(
-                    self.cmds.actors,
+        if self.data.actors:
+            if len(self.data.actors) > settings.FILMS_DISPLAY_INFO:
+                self.data.actors = sorted(
+                    self.data.actors,
                     key=lambda key: self.key_func(key)
                 )[-settings.FILMS_DISPLAY_INFO:]
 
@@ -167,20 +167,16 @@ class Parser(object):
         self.splitted = splitted
 
     def __determine_place(self):
-        def process_part(place_name, candidate):
+        def process_part(place_name):
             if not place_name:
-                return candidate, False
-
-            if isinstance(place_name, unicode):
-                place_name.encode('utf-8')
+                return False
 
             ps = place_name.lower().split(' ')
             for p in ps:
                 if (len(w) > 2 and len(p) > 2 and
                         damerau_levenshtein_distance(p, w) < 3):
-                    candidate.add(place_name)
-                    return candidate, True
-            return candidate, False
+                    return True
+            return False
 
         names = self.places.keys()
 
@@ -188,10 +184,10 @@ class Parser(object):
         for w in self.splitted:
             for place_name in names:
                 for e in place_name:
-                    c, flag = process_part(e, c)
+                    flag = process_part(e)
                     if flag:
+                        c.add(place_name)
                         break
-
         if len(c):
             self.data.place = [self.places[p] for p in c]
 

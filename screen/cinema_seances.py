@@ -72,7 +72,7 @@ def _day_of_seance(day):
     return day_func(v[day]) if day in v else ''
 
 
-def display_cinema_seances(cinema_id, movie_id, day):
+def detect_cinema_seances(cinema_id, movie_id, day):
 
     if not isinstance(day, datetime):
         day = int(day)
