@@ -50,7 +50,7 @@ class Parser(object):
             'cinema': [(self.__determine_place, )],
             'time': [(self.detect_time, self.text)],
             'base': [(self.__parse_film, ), (self.__determine_place, ),
-                     (self.detect_time, self.text), self.parser_special]
+                     (self.detect_time, self.text), (self.parser_special, )]
         }
 
         _consequences = []
