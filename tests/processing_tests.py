@@ -217,13 +217,7 @@ class ParserTests(unittest.TestCase):
         """
         it should work as search of films
         """
-        info = {
-            '{}': '{}',
-            '{}': '{}',
-            '{}': '{}'
-        }
-
-        info = self.gen_info_film(info)
+        info = self.gen_info_film({'{}': '{}', '{}': '{}', '{}': '{}'})
         self.preprocess_fo_what(info)
 
 

@@ -33,8 +33,7 @@ def display_afisha(request, bot, chat_id, tuid):
         category = getattr(data, category_name)
         if category and data.place:
 
-            time = (data.when if isinstance(data.when, list) and
-                    len(data.when) > 0 else settings.TODAY)
+            time = data.when if data.when else settings.TODAY
 
             for p in data.place:
                 for w in category:
