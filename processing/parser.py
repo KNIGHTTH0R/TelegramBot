@@ -60,11 +60,7 @@ class Parser(object):
         return filter(lambda x: x, _consequences)
 
     def parser_special(self):
-        try:
-            from google.appengine.ext import deferred
-            deferred.defer(self._parse_special)
-        except:
-            self._parse_special()
+        self._parse_special()
 
     def _parse_special(self):
         try:
