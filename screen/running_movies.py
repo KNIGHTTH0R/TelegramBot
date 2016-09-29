@@ -50,7 +50,8 @@ def process_movies(data, number_of_movies, callback_url,
         if cinema_id and separator and next_info_url:
             expanded_info = True
 
-            link = '{}{}{}{}'.format(next_url, cinema_id, separator, movie['id'])
+            link = '{}{}{}{}'.format(next_url, cinema_id,
+                                     separator, movie['id'])
             f_info = IMovieCinema(
                 movie['title'], link,
                 '{}{}'.format(next_info_url, movie['id'])
@@ -84,7 +85,7 @@ def process_movies(data, number_of_movies, callback_url,
     if expanded_info:
         template = (settings.JINJA_ENVIRONMENT.
                     get_template('running_movies_ext.md'))
-    
+
         msg = template.render({'videos': videos, 'premiers': premiers,
                                'sign_video': settings.SIGN_VIDEO,
                                'sign_tip': settings.SIGN_TIP,
