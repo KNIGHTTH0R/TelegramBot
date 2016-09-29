@@ -48,9 +48,9 @@ class Parser(object):
         scenario = {
             'film': [(self.__parse_film, ), (self.parser_special, )],
             'cinema': [(self.__determine_place, )],
-            'time': [(self.detect_time, self.text)],
+            'time': [(self._detect_time, )],
             'base': [(self.__parse_film, ), (self.__determine_place, ),
-                     (self.detect_time, self.text), (self.parser_special, )]
+                     (self._detect_time, ), (self.parser_special, )]
         }
 
         _consequences = []
@@ -186,6 +186,9 @@ class Parser(object):
                         break
         if len(c):
             self.data.place = [self.places[p] for p in c]
+
+    def _detect_time(self):
+        self.data.when = self.detect_time(self.text)
 
     @staticmethod
     def detect_time(text):
