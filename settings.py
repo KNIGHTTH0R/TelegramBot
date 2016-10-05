@@ -4,12 +4,16 @@
 import os
 
 from collections import namedtuple
+from telepot.namedtuple import ReplyKeyboardMarkup, KeyboardButton
 
 import jinja2
+import pymorphy2
 
 
 Row = namedtuple('Row', ['title', 'link'])
 RowDist = namedtuple('RowDist', ['title', 'distance', 'link'])
+
+MORPH = pymorphy2.MorphAnalyzer()
 
 
 def uncd(s):
@@ -18,6 +22,20 @@ def uncd(s):
     else:
         s = unicode(s)
     return s
+
+
+def de_uncd(t):
+    if isinstance(t, unicode):
+        return t.encode('utf-8')
+    return t
+
+
+def start_markup():
+    return ReplyKeyboardMarkup(keyboard=[
+        [KeyboardButton(text=FILMS),
+         KeyboardButton(text=CINEMA)],
+        [KeyboardButton(text=SUPPORT_INFO)]
+    ])
 
 
 JINJA_ENVIRONMENT = jinja2.Environment(
@@ -29,10 +47,10 @@ JINJA_ENVIRONMENT = jinja2.Environment(
 TIMEZONE = 2
 bot_username = 'KinohodBot'
 KINOHOD_API_KEY = 'f056d104-abcd-3ab7-9132-cfcf3a098bc4'
-# TELEGRAM_BOT_TOKEN = '209622038:AAGuPWWiLqXXAZlEcfh6tC85DKtHslVUJdA'  # production
-TELEGRAM_BOT_TOKEN = '220697123:AAGHvA89SQ3qVCXyafTB9GObKa7E1f9xRrs'
-# BOTAN_TOKEN = 'DXKQu6IQbjGwX7HSdLP1OCNHMkOoX0ak'  # production
-BOTAN_TOKEN = 'ip2CSBT89XNqLbzAjcaF4vw6Iyc9LJIx'
+TELEGRAM_BOT_TOKEN = '209622038:AAGuPWWiLqXXAZlEcfh6tC85DKtHslVUJdA'  # production
+# TELEGRAM_BOT_TOKEN = '220697123:AAGHvA89SQ3qVCXyafTB9GObKa7E1f9xRrs'
+BOTAN_TOKEN = 'DXKQu6IQbjGwX7HSdLP1OCNHMkOoX0ak'  # production
+# BOTAN_TOKEN = 'ip2CSBT89XNqLbzAjcaF4vw6Iyc9LJIx'
 
 
 BASE_URL = 'https://api.telegram.org/bot{}/'.format(TELEGRAM_BOT_TOKEN)
@@ -58,7 +76,7 @@ BASE_KINOHOD = 'https://kinohod.ru'
 FILMS_TO_DISPLAY = 10
 CINEMAS_TO_DISPLAY = 10
 FILMS_DISPLAY_INFO = 5
-CINEMA_TO_SHOW = 10
+CINEMA_TO_SHOW = 3
 SEANCES_TO_DISPLAY = 10
 
 TODAY = 0
@@ -91,12 +109,13 @@ NO_FILMS = 'К сожалению, больше нет фильмов в про�
 MORE = 'Ещё'
 MORE_INFO = 'Подробнее о предложениях'
 TREILER = 'Трейлер'
-DONT_UNDERSTAND = 'Я Вас не понимаю {}'.decode('utf-8').format(SIGN_SCREAMING)
+DONT_UNDERSTAND = 'Извините, я не понял, что именно вас интересует. Спросите еще раз или воспользуйтесь кнопками меню {}'.decode('utf-8').format(SIGN_SCREAMING)
 CINEMA_NOT_VALID = 'Кинотеатр не доступен сейчас'
 CINEMA_NOT_FOUND = 'Не удалось найти кинотеатр'
-ON_TOMORROW = 'На завтра'
-ON_A_TOMORROW = 'На послезавтра'
-ON_TODAY = 'На сегодня'
+ON_TOMORROW = 'Завтра'
+ON_A_TOMORROW = 'Послезавтра'
+ON_TODAY = 'Сегодня'
+NO_FILM_SEANCE = 'Увы, но сеансов на выбранный фильм нет {}'.decode('utf-8').format(SIGN_SCREAMING)
 NO_SEANCE = 'Нет сеансов на выбранный фильм в этом кинотеатре {}'.decode('utf-8').format(SIGN_SCREAMING)
 SERVER_NOT_VALID = 'Увы, сервер недоступен.'
 BUY_TICKET = 'Купить билеты'
@@ -110,6 +129,11 @@ TICKET_RETURNING = 'Возврат билета'
 TICKET_RETURNING_REPLY = 'У каждого кинотеатра свои правила возврата билета. Перейдите по ссылке «Вернуть билеты» в письме от Кинохода.'
 
 ANOTHER = 'Другое'
+ANOTHER_DAY = 'Другой день'
+ENTER_LOCATION = 'Отправьте свое местоположение, для этого нажмите {},а затем location'.decode('utf-8').format(SIGN_CLIP)
+DAY_CHANGED = 'Что - то не понял дату, выбрал завтра'
+ENTER_DATE = 'Введите день, когда хотите пойти посмотреть фильмец'
+# ANOTHER_CINEMA = 'Другой кинотеатр'
 WHAT_A_PROBLEM = 'В чем проблема?'
 TERMINAL_NOT_WORKING = 'Терминал в к/т не работает'
 SERTIFICATES = 'Сертификаты'
@@ -124,7 +148,7 @@ BACK = 'Назад'
 SUPPORT_HELP = 'Чем я могу Вам помочь? {}'.decode('utf-8').format(SIGN_DOWN_FINGER)
 WHAT_PROBLEM = 'В чем проблема?'
 NO_MAIL_TICKET = 'Не пришло письмо с билетом'
-
+FILM_PREVIEW = 'Введите часть названия фильма или его жанр, чтобы я нашел его {}'.decode('utf-8').format(SIGN_FINGER)
 
 NO_PAY = 'Не прошла оплата'
 CANNOT_PAY = 'Невозможно оплатить'
@@ -167,10 +191,10 @@ NEED_CONTACT = 'Мы взяли Ваш запрос в обработку и с�
 NEED_CONTACT_MAIL = 'Пожалуйста введите Ваш email, чтобы наш специалист мог связаться с Вами.'
 PAY_ERROR = 'Какая ошибка появилась на сайте/в приложении?'
 INFO_FULL = 'Допишите id фильма в команду /info и получите подробную информацию о фильме '
-
+CANNOT_FIND_SEANCE = 'Не удалось найти расписание'
 SUPPORT_INFO = 'Обращение в службу поддержки'
 FILMS = 'Фильмы'
-FILM_INFO = 'Вам под силу написать название фильма, можно его часть или же жанр - мы очень постараемся вам угодить'
+FILM_INFO = 'Вам под силу написать название фильма, можно его часть или же жанр - мы очень постараемся вам угодить {}'.decode('utf-8').format(SIGN_FINGER)
 CINEMA = 'Кинотеатры'
 CINEMA_NAME = '*Кинотеатр:* {}'
 CINEMA_INFO = 'Вам выпадает шанс ввести адресс или станцию метро или хоть что-нибудь, что говорит о месте кинотеатра, в который вы хотите'
@@ -186,16 +210,16 @@ INVALID_EMAIL = 'Некорректный email'
 CANCEL_SUCCESS = 'Отмена заказа прошла успешно'
 CANCEL_ERROR = 'Отмена заказа завершилась ошибкой'
 
-
 support_a = {
-    NO_AGAIN: '{} > {} > {} > {} > {}'.format(
+    NO_AGAIN.decode('utf-8').lower(): '{} > {} > {} > {} > {}'.format(
         SUPPORT_INFO, PROBLEM_BUY_TICKET, NO_PAY,
         CANNOT_PAY, YES_VALID_CASH, NO_AGAIN),
 
-    NO_MAIL_SENDED: '{} > {} > {} > {} > {} > {}'.format(
-        SUPPORT_INFO, PROBLEM_BUY_TICKET, NO_MAIL_TICKET,
-        YES_IT_WAS, NO_MAIL, NO_MAIL_SENDED),
+    NO_MAIL_SENDED.decode('utf-8').lower():
+        '{} > {} > {} > {} > {} > {}'.format(
+            SUPPORT_INFO, PROBLEM_BUY_TICKET, NO_MAIL_TICKET,
+            YES_IT_WAS, NO_MAIL, NO_MAIL_SENDED),
 
-    ANOTHER_PAY_ER: '{} > {} > {} > {}'.format(
+    ANOTHER_PAY_ER.decode('utf-8').lower(): '{} > {} > {} > {}'.format(
         SUPPORT_INFO, PROBLEM_BUY_TICKET, NO_PAY, ANOTHER_PAY_ER)
 }

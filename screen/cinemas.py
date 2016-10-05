@@ -6,8 +6,8 @@ import contextlib
 import urllib2
 import json
 
-from model import get_model
-from model import UserProfile
+from model.base import get_model
+from model.base import UserProfile
 
 import settings
 
@@ -23,7 +23,8 @@ def get_data(url):
         return json.loads(jf.read())
 
 
-def get_nearest_cinemas(bot, chat_id, number_of_cinemas):
+def get_nearest_cinemas(bot, chat_id, number_of_cinemas,
+                        movie_id=None, next_url='/show'):
 
     u = get_model(UserProfile, chat_id)
     if not u.location:
@@ -41,10 +42,14 @@ def get_nearest_cinemas(bot, chat_id, number_of_cinemas):
     r = get_data(url)
     data = r['data'] if 'data' in r else None
 
+    if not data:
+        return settings.DONT_UNDERSTAND, None
+
     cinemas = []
     template = settings.JINJA_ENVIRONMENT.get_template('cinema.md')
     for film_counter in xrange(number_of_cinemas - settings.CINEMA_TO_SHOW,
                                number_of_cinemas):
+
         if film_counter < len(data):
             cinema = data[film_counter]
         else:
@@ -62,13 +67,18 @@ def get_nearest_cinemas(bot, chat_id, number_of_cinemas):
                 if s.name and s.distance:
                     subways.append(s)
 
-        cinemas.append(
-            Cinema(
+        if movie_id:
+            cinemas.append(Cinema(
                 cinema['shortTitle'],
-                '/show{}'.format(cinema['id']),
+                '{}{}m{}'.format(next_url, cinema['id'], movie_id),
                 subways
-            )
-        )
+            ))
+        else:
+            cinemas.append(Cinema(
+                cinema['shortTitle'],
+                '{}{}'.format(next_url, cinema['id']),
+                subways
+            ))
 
         # add this to cinema.md to use metro stations
         # {% for m in s.subways -%}

@@ -6,8 +6,9 @@ import json
 
 from telepot.namedtuple import InlineKeyboardMarkup
 
-from model import get_model
-from model import UserProfile
+from model.base import get_model
+from model.base import UserProfile
+from model.film import Film
 
 import settings
 
@@ -32,17 +33,28 @@ def gen_markup(movie_id, number_of_seances):
 
 
 def get_data(url):
-    with contextlib.closing(urllib2.urlopen(url)) as jf:
-        return json.loads(jf.read())
+    try:
+        with contextlib.closing(urllib2.urlopen(url)) as jf:
+            return json.loads(jf.read())
+    except Exception:
+        return None
 
 
 def get_seances(chat_id, movie_id, number_of_seances):
 
     u = get_model(UserProfile, chat_id)
 
+    f = Film.get_by_id(str(movie_id))
+    if f and not f.cinemas:
+        return settings.NO_FILM_SEANCE
+
+    cinemas = [k.get() for k in f.cinemas]
+    cinema_ids = [c.kinohod_id for c in cinemas]
+
     if u:
         l = json.loads(u.location)
         latitude, longitude = l['latitude'], l['longitude']
+
         url = '{}?lat={}&long={}&sort=distance&cityId=1'.format(
             settings.URL_WIDGET_CINEMAS,
             latitude,
@@ -50,16 +62,32 @@ def get_seances(chat_id, movie_id, number_of_seances):
         )
 
         seances = []
+
         html_data = get_data(url)
 
+        if not html_data:
+            return settings.DONT_UNDERSTAND, None
+
+        if 'data' not in html_data:
+            return settings.CANNOT_FIND_SEANCE, None
+
         for info in html_data['data']:
+
+            cinema_id = info.get('id')
+
+            if str(cinema_id) not in cinema_ids:
+                continue
+
             seances.append(
                 settings.RowDist(
                     settings.uncd(info['shortTitle']),
                     info['distance'],
-                    '(/c{}m{})'.format(info['id'], movie_id)
+                    '(/c{}m{})'.format(cinema_id, movie_id)
                 )
             )
+
+        if len(seances) < 1:
+            return settings.NO_FILM_SEANCE, None
 
         correct, n = False, settings.SEANCES_TO_DISPLAY
         while not correct:
@@ -90,10 +118,19 @@ def get_seances(chat_id, movie_id, number_of_seances):
         seances = []
         html_data = get_data(url)
 
+        if not html_data:
+            return settings.DONT_UNDERSTAND, None
+
         for info in html_data:
+
+            cinema_json = info.get('cinema')
+            cinema_id = cinema_json.get('id')
+            if str(cinema_id) not in cinema_ids:
+                continue
+
             seances.append(
-                settings.Row(settings.uncd(info['cinema']['shortTitle']),
-                             '(/c{}m{})'.format(info['cinema']['id'],
+                settings.Row(settings.uncd(cinema_json['shortTitle']),
+                             '(/c{}m{})'.format(cinema_id,
                                                 info['movie']['id']))
             )
 
@@ -114,19 +151,38 @@ def display_seances_part(text, movie_id, number_of_seances):
     )
 
     seances = []
+
+    f = Film.get_by_id(str(movie_id))
+    if f and not f.cinemas:
+        return settings.NO_FILM_SEANCE
+
+    cinemas = [k.get() for k in f.cinemas]
+    cinema_ids = [c.kinohod_id for c in cinemas]
+
     html_data = get_data(url)
+
+    if not html_data:
+        return settings.DONT_UNDERSTAND
+
     for info in html_data:
-        if (('shortTitle' in info['cinema'] and
-                info['cinema']['shortTitle'].find(text) > -1) or
+
+        cinema_json = info.get('cinema')
+        cinema_id = cinema_json.get('id')
+
+        if cinema_id not in cinema_ids:
+            continue
+
+        if (('shortTitle' in cinema_json and
+                cinema_json['shortTitle'].find(text) > -1) or
             ('address' in info['cinema'] and
-                info['cinema']['address'].find(text) > -1) or
-            ('subway_stations' in info['cinema'] and
-                'name' in info['cinema']['subway_stations'] and
-                info['cinema']['subway_stations']['name'].find(text) > -1)):
+                cinema_json['address'].find(text) > -1) or
+            ('subway_stations' in cinema_json and
+                'name' in cinema_json['subway_stations'] and
+                cinema_json['subway_stations']['name'].find(text) > -1)):
 
             seances.append(
-                settings.Row(info['cinema']['shortTitle'],
-                             '(/c{}m{})'.format(info['cinema']['id'],
+                settings.Row(cinema_json['shortTitle'],
+                             '(/c{}m{})'.format(cinema_json['id'],
                                                 info['movie']['id']))
             )
 

@@ -11,11 +11,13 @@ from commands import send_reply
 import settings
 
 
-def process_what(bot, chat_id, tuid, whats):
+def process_what(bot, chat_id, tuid, whats, next_url='/seance'):
     whats = (whats[:settings.FILMS_DISPLAY_INFO]
              if len(whats) > settings.FILMS_DISPLAY_INFO else whats)
     for w in whats:
-        message, mark_up, poster = display_movie_info(w['id'], tuid)
+        message, mark_up, poster = display_movie_info(
+            w.kinohod_id, tuid, next_url=next_url
+        )
         if not message or not mark_up or not poster:
             bot.sendMessage(chat_id, settings.SERVER_NOT_VALID)
         bot.sendChatAction(chat_id, 'upload_photo')
@@ -34,11 +36,10 @@ def display_afisha(request, bot, chat_id, tuid):
         if category and data.place:
 
             time = data.when if data.when else settings.TODAY
-
             for p in data.place:
                 for w in category:
                     if send_reply(bot, chat_id, detect_cinema_seances,
-                                  int(p['id']), int(w['id']), time):
+                                  int(p.kinohod_id), int(w.kinohod_id), time):
                         flag = True
             if flag:
                 return True
@@ -51,7 +52,7 @@ def display_afisha(request, bot, chat_id, tuid):
 
         if data.place and not flag:
             send_reply(bot, chat_id, get_cinema_movies,
-                       int(data.place[0]['id']), settings.CINEMA_TO_SHOW)
+                       int(data.place[0].kinohod_id), settings.CINEMA_TO_SHOW)
             return True
 
     bot.sendChatAction(chat_id, action='typing')
@@ -69,14 +70,18 @@ def display_films(request, bot, chat_id, tuid):
     def film_iteraction(category_name, data):
         category = getattr(data, category_name)
         if category:
-            process_what(bot, chat_id, tuid, category)
+            process_what(bot, chat_id, tuid, category, next_url='/location')
             return True
 
     bot.sendChatAction(chat_id, action='typing')
     parser = Parser(request=request, state='film')
     parser.parse()
 
-    for c in ['what', 'genre', 'actors']:
+    if film_iteraction('what', parser.data):
+        return True
+
+    parser.parser_special()
+    for c in ['genre', 'actors']:
         if film_iteraction(c, parser.data):
             return True
     return False
@@ -92,12 +97,18 @@ def display_cinemas(request, bot, chat_id, tuid):
         bot.sendMessage(chat_id, settings.CINEMA_NOT_FOUND)
     else:
         for p in parser.data.place:
+            if not p:
+                bot.sendMessage(chat_id, settings.DONT_UNDERSTAND)
+                return True
+
             bot.sendMessage(
                 chat_id,
-                settings.CINEMA_NAME.format(p['shortTitle'].encode('utf-8')),
+                settings.CINEMA_NAME.format(
+                    p.shortTitle.encode('utf-8')
+                ),
                 parse_mode='Markdown'
             )
 
             send_reply(bot, chat_id, get_cinema_movies,
-                       p['id'], settings.CINEMA_TO_SHOW)
+                       p.kinohod_id, settings.CINEMA_TO_SHOW)
     return True

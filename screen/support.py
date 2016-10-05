@@ -11,15 +11,9 @@ from google.appengine.ext import deferred
 
 from commands import films_category, cinema_category, base_category
 
+from settings import start_markup
+
 import settings
-
-
-def start_markup():
-    return ReplyKeyboardMarkup(keyboard=[
-        [KeyboardButton(text=settings.FILMS),
-         KeyboardButton(text=settings.CINEMA)],
-        [KeyboardButton(text=settings.SUPPORT_INFO)]
-    ])
 
 
 def film_markup():
@@ -41,38 +35,36 @@ def cinema_markup():
 def send_approved_mail(text):
     # [START send_mail]
 
-    mail.send_mail(sender='endnikita@gmail.com',
-                   # to='support@kinohod.ru',
-                   to='testbot@kinohod.ru',
-                   # to='nikita_end@mail.ru',
-                   subject='Need support, Info from Telegram bot',
-                   body=text)
+    try:
+        mail.send_mail(sender='endnikita@gmail.com',
+                       to='support@kinohod.ru',
+                       # to='testbot@kinohod.ru',
+                       # to='nikita_end@mail.ru',
+                       subject='Need support, Info from Telegram bot',
+                       body=text)
+    except Exception:
+        pass
 
 
 def mail_markup(text):
     markup = start_markup()
-    try:
-        deferred.defer(send_approved_mail, text)
-    except Exception as e:
-        import logging
-        logging.info(e.message)
-
+    deferred.defer(send_approved_mail, text)
     return markup
 
 
 # @botan.wrap_track
 def send_mail_story(tuid, bot, chat_id, text, cmd, profile):
+
     if not validate_email(cmd.encode('utf-8')):
         bot.sendMessage(chat_id, settings.INVALID_EMAIL)
         return
 
-    markup = mail_markup('{} my email: {}'.format(
-        settings.support_a[text],
-        cmd.encode('utf-8')
-    ))
+    msg = '{} my email: {}'.format(settings.support_a[text],
+                                   cmd.encode('utf-8'))
+    markup = mail_markup(msg)
 
     if markup:
-        bot.sendMessage(chat_id, settings.NEED_CONTACT, markup)
+        bot.sendMessage(chat_id, settings.NEED_CONTACT, reply_markup=markup)
 
 
 class Msg(namedtuple('Msg', ['msg', 'texts', 'markup', 'func', 'style'])):

@@ -15,10 +15,159 @@
 # limitations under the License.
 #
 
-from views import CommandReceiveView
+import json
 
 import webapp2
 
+from google.appengine.ext import deferred
+
+from views import CommandReceiveView
+from model.search import ModelSearch, create_film_documents
+from data import get_data, get_schedule
+from processing.maching import damerau_levenshtein_distance
+from model.cinema import Cinema, set_cinema_model
+from model.film import Film, Genre, set_film_model
+
+import settings
+
+
+def set_cinema_models():
+    films, places = get_data('cinema')
+    for k, p in places.iteritems():
+        set_cinema_model(p)
+
+
+def set_film_models():
+    films, places = get_data('film')
+    for k, f in films.iteritems():
+        schedules = get_schedule(f.get('id'))
+        set_film_model(f, schedules)
+
+
+class UpdateBFilmView(webapp2.RedirectHandler):
+    def get(self, *args, **kwargs):
+        deferred.defer(set_film_models, )
+
+
+class UpdateBCinemaView(webapp2.RedirectHandler):
+
+    def get(self, *args, **kwargs):
+        deferred.defer(set_cinema_models, )
+
+
+class CountCinemasView(webapp2.RedirectHandler):
+    def get(self, *args, **kwargs):
+        films, places = get_data('cinema')
+
+        self.response.write(
+            'places: {} and cinemas: {}'.format(
+                str(len(places.values())),
+                str(len(Cinema.query().fetch())),
+            )
+        )
+
+
+class CountFilmsView(webapp2.RedirectHandler):
+    def get(self, *args, **kwargs):
+        films, places = get_data('film')
+
+        self.response.write(
+            'films: {} and db films: {}'.format(
+                str(len(films.values())),
+                str(len(Film.query().fetch())),
+            )
+        )
+
+
+class CinemaSearchIndexView(webapp2.RedirectHandler):
+
+    def get(self, *args, **kwargs):
+        ModelSearch.create_cinema_documents()
+
+
+class FilmSearchIndexView(webapp2.RedirectHandler):
+    def get(self, *args, **kwargs):
+        deferred.defer(create_film_documents, )
+
+
+class CinemaSearchIndexTestView(webapp2.RedirectHandler):
+
+    def get(self, *args, **kwargs):
+        text = 'хочу на арбат'
+
+        self.response.write(
+            json.dumps(
+                [m.to_dict() for m in ModelSearch.query_cinema(text)]
+            )
+        )
+
+
+class DeleteAllSearchFilmDocumentsView(webapp2.RedirectHandler):
+    def get(self, *args, **kwargs):
+        ModelSearch.delete_documents(index_name='films')
+
+
+class DeleteAllSearchCinemaDocumentsView(webapp2.RedirectHandler):
+    def get(self, *args, **kwargs):
+        ModelSearch.delete_documents(index_name='cinemas')
+
+
+class FilmSearchIndexTestView(webapp2.RedirectHandler):
+    def get(self, *args, **kwargs):
+
+        a = []
+        for text in ['russian_title',
+                     'Рожденные на воле', 'жених хочу посмотреть',
+                     'Зачинщики', 'хочу на аист']:
+
+            r = ModelSearch.query_film(text)
+            a.append(
+                ([m.title for m in r] if r else [])
+            )
+
+        self.response.write(
+            json.dumps(
+                a  # ModelSearch.query_film(text)
+            )
+        )
+
+
+class FilmGenreTestView(webapp2.RedirectHandler):
+    def get(self, *args, **kwargs):
+
+        text = 'комедия'.decode('utf-8')
+
+        a = []
+
+        for g in Genre.query().order().fetch():
+            if damerau_levenshtein_distance(g.name, text) < 3:
+                for k in g.films:
+                    a.append(k.title)
+                break
+
+        sorted(a, key=lambda f: (-f['premiereDateWorld']
+                                 if 'premiereDateWorld' in f else 0))
+
+        self.response.write(
+            json.dumps(
+                a  # ModelSearch.query_film(text)
+            )
+        )
+
+
 app = webapp2.WSGIApplication([
-    ('/bot', CommandReceiveView),
+    ('/update_film', UpdateBFilmView),
+    ('/update_cinema', UpdateBCinemaView),
+    ('/delete_all_cinema_docs', DeleteAllSearchCinemaDocumentsView),
+    ('/delete_all_film_docs', DeleteAllSearchFilmDocumentsView),
+    ('/search_cinema', CinemaSearchIndexView),
+    ('/search_film', FilmSearchIndexView),
+    ('/count_cinemas', CountCinemasView),
+    ('/test_genre_film', FilmGenreTestView),
+    ('/count_films', CountFilmsView),
+    ('/test_cinema', CinemaSearchIndexTestView),
+    ('/test_film', FilmSearchIndexTestView),
+
+    # should be exchanged to /botAPI_KINOHOD like unique link
+    ('/bot{}'.format(settings.KINOHOD_API_KEY), CommandReceiveView),
 ], debug=True)

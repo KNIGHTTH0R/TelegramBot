@@ -220,6 +220,22 @@ class ParserTests(unittest.TestCase):
         info = self.gen_info_film({'{}': '{}', '{}': '{}', '{}': '{}'})
         self.preprocess_fo_what(info)
 
+    def test_time_detection(self):
+
+        texts = {
+            '1.10': datetime.now().replace(day=1, month=10),
+            '01:10':  datetime.now().replace(day=1, month=10),
+            '1:09':  datetime.now().replace(day=1, month=9),
+            '1 сентября':  datetime.now().replace(day=1, month=9),
+            'завтра':  datetime.now() + timedelta(days=1),
+            '3.10':  datetime.now().replace(day=3, month=10),
+        }
+
+        for t, v in texts.iteritems():
+            predict = Parser.detect_time(t)
+            self.assertTrue(
+                predict.date() == v.date(),
+                msg='error text: {} != {} predicted: {}'.format(t, v, predict))
 
 if __name__ == '__main__':
     unittest.main()

@@ -2,5 +2,5 @@
 *{{ place }}*
 *Дата: * {{ date }}
 {% for s in seances -%}
-{{ s.time }} от {{ s.minPrice }} руб. {% if s.id > 1 %} /schedule{{ s.id }} {% endif %}
+{{ s.time }} {% if s.format is not none %} в формате {{ s.format }} {% endif %} от {{ s.minPrice }} руб. {% if s.id > 1 %} /schedule{{ s.id }} {% endif %}
 {% endfor %}

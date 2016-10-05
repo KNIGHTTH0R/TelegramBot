@@ -48,7 +48,11 @@ def _construct_markup(cinema_id, movie_id, day):
             dict(text=second,
                  callback_data=(
                      '/c{}m{}d{}'.format(cinema_id, movie_id, day_id_m[second])
-                 ))
+                 )),
+            dict(text=settings.ANOTHER_DAY,
+                 callback_data=(
+                     '/anytimec{}m{}d'.format(cinema_id, movie_id)
+                 )),
         ]])
 
     return display_other(day)
@@ -92,12 +96,14 @@ def detect_cinema_seances(cinema_id, movie_id, day):
         logging.debug(ex.message)
         return None, None
 
-    f = namedtuple('f', ['tip', 'time', 'minPrice', 'id'])
+    CinemaSeances = namedtuple('CinemaSeances',
+                               ['tip', 'time', 'minPrice', 'id', 'format'])
 
     if html_data is None:
         return settings.NO_SEANCE, None
 
-    if html_data:
+    place = ''.decode('utf-8')
+    if isinstance(html_data, list) and len(html_data) > 0:
         place = html_data[0]['cinema']['title']
 
     for info in html_data:
@@ -105,14 +111,26 @@ def detect_cinema_seances(cinema_id, movie_id, day):
             continue
         seances = []
         for s in info['schedules']:
-            m_p = (s['minPrice'] if s['minPrice']
-                   else settings.DO_NOT_KNOW)
+            m_p = s['minPrice'] if s['minPrice'] else settings.DO_NOT_KNOW
+
+            s_f = None
+            if s['formatName'] and len(s['formatName']) < 10:
+                s_f = s['formatName']
 
             if _calculate_is_onsale(s['startTime']):
-                seances.append(f(settings.SIGN_TIP, s['time'],
-                                 m_p, int(s['id'])))
+                seances.append(
+                    CinemaSeances(
+                        settings.SIGN_TIP,
+                        s['time'],
+                        m_p,
+                        int(s['id']),
+                        s_f
+                    )
+                )
             else:
-                seances.append(f(settings.SIGN_TIP, s['time'], m_p, 0))
+                seances.append(
+                    CinemaSeances(settings.SIGN_TIP, s['time'], m_p, 0, s_f)
+                )
 
         markup = _construct_markup(cinema_id, movie_id, day)
         template = settings.JINJA_ENVIRONMENT.get_template('cinema_seances.md')
@@ -130,6 +148,6 @@ def detect_cinema_seances(cinema_id, movie_id, day):
             'date': day_str
         }), markup
 
-    return '/c{}m{}  {}'.decode('utf-8').format(
+    return '/show{} movie {} {}'.decode('utf-8').format(
         cinema_id, movie_id, settings.NO_SEANCE
     ), None

@@ -18,9 +18,9 @@ from screen.help import get_help
 from screen.movie_info import display_movie_info
 from screen.cinema_seances import detect_cinema_seances
 from screen.running_movies import get_cinema_movies, display_running_movies
-
-from model import set_model, get_model
-from model import UserProfile, ReturnTicket
+from settings import start_markup
+from model.base import set_model, get_model
+from model.base import UserProfile, ReturnTicket
 
 
 import settings
@@ -39,16 +39,29 @@ def send_reply(bot, chat_id, func, *args, **kwargs):
     if r is None:
         return False
 
-    bot.sendMessage(chat_id, r, parse_mode='Markdown', reply_markup=markup)
+    try:
+        bot.sendMessage(chat_id, r, parse_mode='Markdown', reply_markup=markup)
+    except:
+        bot.sendMessage(chat_id, settings.DONT_UNDERSTAND)
 
     if 'success' in kwargs:
-        bot.answerCallbackQuery(callback_query_id=kwargs['success'], text=':)')
+        try:
+            bot.answerCallbackQuery(
+                callback_query_id=kwargs['success'],
+                text=':)'
+            )
+        except:
+            pass
 
     return True
 
 
 def display_help(bot, payload, cmd, chat_id):
-    bot.sendMessage(chat_id, get_help(), parse_mode='Markdown')
+    bot.sendMessage(
+        chat_id,
+        get_help(),
+        parse_mode='Markdown',
+        reply_markup=start_markup())
 
 
 def display_nearest(bot, payload, cmd, chat_id):
@@ -75,6 +88,42 @@ def display_seance(bot, payload, cmd, chat_id):
                         if n_seances == settings.SEANCES_TO_DISPLAY
                         else None),
                    success=int(payload['callback_query']['id']))
+
+
+def callback_seance_location(tuid, bot, chat_id, text, cmd, profile):
+    bot.sendChatAction(chat_id, action='typing')
+
+    i_n = profile.cmd.index('num')
+    movie_id = profile.cmd[len('/location'): i_n]
+    n_seances = int(cmd[i_n + len('num'): len(cmd)])
+
+    send_reply(
+        bot, chat_id, get_seances, chat_id, movie_id, n_seances,
+        msg=(settings.FIND_CINEMA
+             if n_seances == settings.SEANCES_TO_DISPLAY else None)
+    )
+
+
+def display_location_seance(bot, payload, cmd, chat_id):
+    bot.sendMessage(chat_id, settings.ENTER_LOCATION)
+
+    try:
+        bot.answerCallbackQuery(
+            callback_query_id=int(payload['callback_query']['id']), text=':)'
+        )
+
+    except:
+        pass
+
+
+def display_movie_nearest_cinemas(tuid, bot, chat_id, text, cmd, profile):
+    next_url = '/c'
+
+    i_n = profile.cmd.index('num')
+    movie_id = profile.cmd[len('/location'): i_n]
+
+    send_reply(bot, chat_id, get_nearest_cinemas,
+               bot, chat_id, settings.CINEMA_TO_SHOW, movie_id, next_url)
 
 
 def display_cinema(bot, payload, cmd, chat_id):
@@ -112,7 +161,6 @@ def films_category(bot, payload, cmd, chat_id):
     :return:
     """
     deferred.defer(set_model, cls=UserProfile, pk=chat_id, state='films')
-    display_movies(bot, payload, cmd, chat_id)
 
 
 def cinema_category(bot, payload, cmd, chat_id):
@@ -132,25 +180,66 @@ def base_category(bot, payload, cmd, chat_id):
     :return:
     """
     deferred.defer(set_model, cls=UserProfile, pk=chat_id, state='base')
+    display_movies(bot, payload, cmd, chat_id)
     pass
 
 
 def display_seances_cinema(bot, payload, cmd, chat_id):
-    bot.sendChatAction(chat_id, action='typing')
+
+    if 'm' not in cmd:
+        bot.sendMessage(chat_id, settings.DONT_UNDERSTAND)
+        return
+
     index_of_m = cmd.index('m')
     cinema_id = cmd[2:index_of_m]
+    bot.sendChatAction(chat_id, action='typing')
 
     if 'callback_query' in payload:
         index_of_d = cmd.index('d')
-        movie_id, d = cmd[index_of_m + 1:index_of_d], cmd[-1]
+        movie_id, d = cmd[index_of_m + 1:index_of_d], cmd[index_of_d + 1:]
+
         send_reply(bot, chat_id, detect_cinema_seances,
                    cinema_id, movie_id, d,
                    success=int(payload['callback_query']['id']))
     else:
-        movie_id = cmd[index_of_m + 1:len(cmd)]
+        movie_id = cmd[index_of_m + 1:]
         d = settings.TODAY
         send_reply(bot, chat_id, detect_cinema_seances,
                    cinema_id, movie_id, d)
+
+
+def display_movie_time_selection(bot, payload, cmd, chat_id):
+    bot.sendMessage(chat_id, settings.ENTER_DATE)
+
+    try:
+        bot.answerCallbackQuery(
+            callback_query_id=int(payload['callback_query']['id']), text=':)'
+        )
+
+    except:
+        pass
+
+
+def callback_movie_time_selection(tuid, bot, chat_id, text, cmd, profile):
+    from processing.parser import Parser
+
+    prev_cmd = profile.cmd[len('/anytime') - 1:]
+    index_of_m = prev_cmd.index('m')
+    cinema_id = prev_cmd[2:index_of_m]
+    index_of_d = prev_cmd.index('d')
+    movie_id = prev_cmd[index_of_m + 1:index_of_d]
+
+    deferred.defer(set_model, UserProfile, chat_id, cmd=cmd)
+
+    cmd, d = cmd.encode('utf-8'), None
+    try:
+        d = Parser.detect_time(cmd)
+    except:
+        bot.sendMessage(chat_id, settings.DAY_CHANGED)
+
+    send_reply(bot, chat_id, detect_cinema_seances,
+               cinema_id, movie_id, d if d else 1)
+    return True
 
 
 def display_schedule(bot, payload, cmd, chat_id):
@@ -221,6 +310,8 @@ def callback_seance(tuid, bot, chat_id, text, cmd, profile):
     if response is not None:
         bot.sendMessage(chat_id, response)
 
+    deferred.defer(set_model, UserProfile, chat_id, cmd=cmd)
+
 
 def callback_return(tuid, bot, chat_id, text, cmd, profile):
 
@@ -233,69 +324,6 @@ def callback_return(tuid, bot, chat_id, text, cmd, profile):
 
         else:
             bot.sendMessage(chat_id, settings.INVALID_EMAIL)
-            deferred.defer(set_model, UserProfile, chat_id, cmd=cmd)
-            return
-
-    else:
-        try:
-            botan.track(tuid, 'return: need email', 'return')
-            order_numb = int(cmd)
-            deferred.defer(set_model, ReturnTicket, chat_id, number=order_numb)
-            deferred.defer(set_model, UserProfile, chat_id, cmd='/return1')
-            bot.sendMessage(chat_id, settings.ENTER_ORDER_EMAIL)
-        except Exception:
-            bot.sendMessage(chat_id, settings.INVALID_ORDER)
-            deferred.defer(set_model, UserProfile, chat_id, cmd=cmd)
-        return
-
-    rt = get_model(ReturnTicket, chat_id)
-    if rt.number and rt.email:
-
-        r = requests.post(
-            settings.URL_CANCEL_TOKEN,
-            json={'order': rt.number, 'email': rt.email})
-
-        r_json = r.json()
-        if r_json['error'] != 0:
-            bot.sendMessage(chat_id, settings.CANCEL_ERROR)
-
-        else:
-
-            if r_json['data']['error'] != 0:
-                botan.track(tuid, 'error in canceling', 'return')
-                bot.sendMessage(chat_id, settings.CANCEL_ERROR)
-            else:
-                botan.track(tuid, 'returning correct', 'return')
-                token = r_json['data']['token']
-                url = settings.URL_CANCEL_TICKET.format(token)
-                cancel_r = requests.get(url)
-                bot.sendMessage(chat_id, cancel_r.json())
-    else:
-        bot.sendMessage(chat_id, settings.ERROR_SERVER_CONN)
-        botan.track(tuid, 'invalid email or any else', 'return')
-
-
-def callback_seance(tuid, bot, chat_id, text, cmd, profile):
-    i_n, l_n = profile.cmd.index('num'), len('num')
-    movie_id = profile.cmd[7: i_n]
-    number_of_seances = profile.cmd[i_n + l_n: len(profile.cmd)]
-    response = display_seances_part(cmd, movie_id, int(number_of_seances))
-    if response is not None:
-        bot.sendMessage(chat_id, response)
-
-
-def callback_return(tuid, bot, chat_id, text, cmd, profile):
-
-    if profile.cmd[len('/return'):] == '1':
-        botan.track(tuid, 'return: validation + sending', 'return')
-        cmd = str(cmd).strip()
-        if validate_email(cmd):
-            deferred.defer(set_model, ReturnTicket, chat_id, email=cmd)
-            # set_model(ReturnTicket, chat_id, email=cmd)
-
-        else:
-            bot.sendMessage(chat_id,
-                                     settings.INVALID_EMAIL)
             deferred.defer(set_model, UserProfile, chat_id, cmd=cmd)
             return
 

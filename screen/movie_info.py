@@ -6,6 +6,8 @@ import json
 
 from telepot.namedtuple import InlineKeyboardMarkup
 
+from model.film import Film
+
 import botan
 import settings
 
@@ -25,7 +27,65 @@ def _get_movie_poster(poster_hash):
     return poster
 
 
-def display_movie_info(movie_id, telegram_user_id):
+def display_movie_info(movie_id, telegram_user_id, next_url='/seance'):
+
+    film = Film.get_by_id(str(movie_id))
+    if not film:
+        display_movie_info_api(movie_id, telegram_user_id, next_url='/seance')
+
+    movie_poster = _get_movie_poster(film.poster.name)
+
+    if film.trailers and len(film.trailers) > 0:
+
+        trailer = film.trailers[0].get()
+        video_hash = trailer.videos[0].filename
+
+        trailer_url = _get_movie_trailer_link(video_hash)
+        shorten_url = botan.shorten_url(trailer_url, settings.BOTAN_TOKEN,
+                                        telegram_user_id)
+
+        markup = InlineKeyboardMarkup(inline_keyboard=[[
+            dict(text=settings.TREILER, url=shorten_url),
+            dict(text=settings.CHOOSE_SEANCE,
+                 callback_data=('{}{}num{}'.format(
+                     next_url, film.kinohod_id,
+                     settings.CINEMAS_TO_DISPLAY)
+                 )),
+        ]])
+    else:
+        markup = InlineKeyboardMarkup(inline_keyboard=[[
+            dict(text=settings.CHOOSE_SEANCE,
+                 callback_data=('{}{}num{}'.format(
+                     next_url, film.kinohod_id, 20)
+                 ))
+        ]])
+
+    template = settings.JINJA_ENVIRONMENT.get_template('movies_info.md')
+    return (template.render({
+        'title': film.title,
+        'description': film.annotationFull,
+        'duration': '{}'.format(film.duration),
+
+        'genres': ', '.join(
+            [a.get().name.encode('utf-8') for a in film.genres]
+        ).decode('utf-8'),
+
+        'sign_actor': settings.SIGN_ACTOR,
+        'actors': ', '.join(
+            [a.name.encode('utf-8') for a in film.actors]
+        ).decode('utf-8'),
+
+        'producers': ', '.join(
+            [a.name.encode('utf-8') for a in film.producers]
+        ).decode('utf-8'),
+
+        'directors': ', '.join(
+            [a.name.encode('utf-8') for a in film.directors]
+        ).decode('utf-8')
+    }), markup, movie_poster)
+
+
+def display_movie_info_api(movie_id, telegram_user_id, next_url='/seance'):
 
     def get_data(name):
         return ', '.join([a.encode('utf-8') for a in html_data[name]])
@@ -58,13 +118,17 @@ def display_movie_info(movie_id, telegram_user_id):
         markup = InlineKeyboardMarkup(inline_keyboard=[[
             dict(text=settings.TREILER, url=shorten_url),
             dict(text=settings.CHOOSE_SEANCE,
-                 callback_data=('/seance{}num{}'.format(
-                     html_data['id'], settings.CINEMAS_TO_DISPLAY))),
+                 callback_data=('{}{}num{}'.format(
+                     next_url, html_data['id'],
+                     settings.CINEMAS_TO_DISPLAY)
+                 )),
         ]])
     else:
         markup = InlineKeyboardMarkup(inline_keyboard=[[
             dict(text=settings.CHOOSE_SEANCE,
-                 callback_data=('/seance{}num{}'.format(html_data['id'], 20)))
+                 callback_data=('{}{}num{}'.format(
+                     next_url, html_data['id'], 20)
+                 ))
         ]])
 
     template = settings.JINJA_ENVIRONMENT.get_template('movies_info.md')

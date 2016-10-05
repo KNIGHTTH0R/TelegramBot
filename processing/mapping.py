@@ -1,13 +1,19 @@
 # coding: utf-8
 
+from collections import OrderedDict
 
-stop_words = ['кино', 'фильм', 'покупка', 'закупка']
+stop_words = [w.decode('utf-8')
+              for w in ['кино', 'фильм', 'синема', 'парк',
+                        'покупка', 'закупка', 'чем-то',
+                        'что-нибудь', 'кто-нибудь', 'где-то',
+                        'какое', 'какие', 'нибудь', 'как-то', 'что-то',
+                        'какой', 'какие', 'как', 'формула', 'фильм', 'кинцо']]
 
-when_nearest = {
-    0: ['сегодня', 'сейчас', 'ближайшие'],
-    1: ['завтра'],
-    2: ['послезавтра']
-}
+when_nearest = OrderedDict({
+    ('сегодня', 'сейчас', 'ближайшее'): 0,
+    ('послезавтра', ): 2,
+    ('завтра', ): 1
+})
 
 when_week = {
     0: ['понедельник'],
@@ -35,14 +41,14 @@ when_month = {
 }
 
 
-nearest_when = {}
-for k, v in when_nearest.iteritems():
+nearest_when = OrderedDict({})
+for v, k in when_nearest.iteritems():
     for e in v:
         nearest_when[e] = k
 
 week_when = {v[0]: k for k, v in when_week.iteritems()}
 
-for ws in when_nearest.itervalues():
+for ws in when_nearest.iterkeys():
     for w in ws:
         stop_words.append(w)
 

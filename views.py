@@ -2,32 +2,30 @@
 
 import json
 
-import endpoints
-import webapp2
-
+from datetime import datetime, timedelta
 from collections import OrderedDict, namedtuple
 
+import endpoints
+import webapp2
 import telepot
 
 from google.appengine.api import urlfetch
 from google.appengine.ext import deferred
 
 from botan import track
-
 from commands import (display_nearest, display_seance, send_reply,
                       display_cinema, display_seances_cinema, callback_seance,
                       display_schedule, display_info_full, display_movies,
-                      display_info, display_help,
-                      display_return, callback_return)
-
+                      display_info, display_help, display_movie_time_selection,
+                      display_return, callback_return, display_location_seance,
+                      callback_movie_time_selection,
+                      display_movie_nearest_cinemas)
 from screen.support import (send_mail_story, start_markup,
                             film_markup, cinema_markup, support_generation)
-
 from screen.cinemas import get_nearest_cinemas
-
-from model import UserProfile
-from model import set_model, get_model
-
+from model.base import UserProfile
+from model.base import set_model, get_model
+from model.search import async_update_film_table
 from view_processing import display_afisha, display_films, display_cinemas
 
 import settings
@@ -45,7 +43,7 @@ def detect_cb(instructions, profile):
         return
 
     for k, v in instructions.iteritems():
-        if profile.cmd.startswith(k.decode('utf-8')):
+        if profile.cmd.startswith(k.decode('utf-8').lower()):
             return v
 
 
@@ -56,6 +54,8 @@ def make_instruction():
         display_cinema: ['/show'],
         display_seance: ['/seance'],
         display_movies: ['/movies'],
+        display_movie_time_selection: ['/anytime'],
+        display_location_seance: ['/location'],
         display_seances_cinema: ['/c'],
         display_schedule: ['/schedule'],
         display_info_full: ['/info_full'],
@@ -70,7 +70,8 @@ def callback_instruction():
         settings.NO_MAIL_SENDED: send_mail_story,
         settings.ANOTHER_PAY_ER: send_mail_story,
         '/seance': callback_seance,
-        '/return': callback_return
+        '/return': callback_return,
+        '/anytime': callback_movie_time_selection,
     })
 
 
@@ -85,6 +86,11 @@ def update_location(l, bot, chat_id, instructions):
     if detect_instruction(instructions, profile.cmd) == display_nearest:
         send_reply(bot, chat_id, get_nearest_cinemas,
                    bot, chat_id, settings.CINEMA_TO_SHOW)
+
+    if (detect_instruction(instructions, profile.cmd) ==
+            display_location_seance):
+        send_reply(bot, chat_id, display_movie_nearest_cinemas,
+                   0, bot, chat_id, settings.CINEMA_TO_SHOW, '', profile)
 
 
 class CommandReceiveView(webapp2.RequestHandler):
@@ -136,21 +142,37 @@ class CommandReceiveView(webapp2.RequestHandler):
         elif cmd is None:
             return
 
+        # try:
         profile = get_model(UserProfile, chat_id)
         cmd = cmd.lower()
+        set_prev_cmd_flag = True
+        func_detected_flag = False
 
-        if cmd.startswith('/'):
+        support_send = [
+            settings.NO_AGAIN.decode('utf-8').lower(),
+            settings.NO_MAIL_SENDED.decode('utf-8').lower(),
+            settings.ANOTHER_PAY_ER.decode('utf-8').lower()
+        ]
+
+        if (cmd.startswith('/') or
+                (profile.cmd and (profile.cmd.startswith('/') or
+                                  (profile.cmd in support_send)))):
+
             func = detect_instruction(instructions, cmd)
             if func:
                 func(bot, payload, cmd, chat_id)
+                func_detected_flag = True
                 track(tuid, '{} called'.format(func.__name__), func.__name__)
 
             else:
                 cb_fn = detect_cb(callback_instruction(), profile)
                 if cb_fn:
+                    func_detected_flag = True
                     cb_fn(tuid, bot, chat_id, profile.cmd, cmd, profile)
+                    # set_prev_cmd_flag = False
 
-        else:
+        if not func_detected_flag:
+
             Schema = namedtuple('Schema', ['reply', 'markup'])
 
             s = {
@@ -178,7 +200,13 @@ class CommandReceiveView(webapp2.RequestHandler):
                         reply_markup=s[profile.state].markup())
                     track(tuid, 'miss understanding', 'invalid')
 
-        deferred.defer(set_model, UserProfile, chat_id, cmd=cmd)
+        if set_prev_cmd_flag:
+            deferred.defer(set_model, UserProfile, chat_id, cmd=cmd)
+
+        now = datetime.now()
+        if profile.update and (profile.update - now) > timedelta(days=3):
+            async_update_film_table()
 
         # except Exception as ex:
-        #    raise endpoints.BadRequestException(ex.message)
+        #     return
+        # raise endpoints.BadRequestException(ex.message)
