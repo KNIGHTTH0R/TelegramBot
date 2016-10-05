@@ -67,6 +67,12 @@ class ModelSearch(object):
         :return: document to index
         """
 
+        if cinema.subway_stations and len(cinema.subway_stations) > 0:
+            metro_s = ' '.join([ModelSearch._p(metro_station.name)
+                                for metro_station in cinema.subway_stations])
+        else:
+            metro_s = 'typical'
+
         return search.Document(
             doc_id=doc_id,
 
@@ -79,9 +85,7 @@ class ModelSearch(object):
 
                 search.TextField(
                     name='metro',
-                    value=(ModelSearch._p(cinema.subway_stations[0].name)
-                           if len(cinema.subway_stations) > 0
-                           else 'typical')
+                    value=metro_s
                 )
             ]
         )

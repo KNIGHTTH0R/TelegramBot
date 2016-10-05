@@ -156,17 +156,17 @@ class FilmGenreTestView(webapp2.RedirectHandler):
 
 
 app = webapp2.WSGIApplication([
-    ('/update_film', UpdateBFilmView),
-    ('/update_cinema', UpdateBCinemaView),
-    ('/delete_all_cinema_docs', DeleteAllSearchCinemaDocumentsView),
-    ('/delete_all_film_docs', DeleteAllSearchFilmDocumentsView),
-    ('/search_cinema', CinemaSearchIndexView),
-    ('/search_film', FilmSearchIndexView),
-    ('/count_cinemas', CountCinemasView),
-    ('/test_genre_film', FilmGenreTestView),
-    ('/count_films', CountFilmsView),
-    ('/test_cinema', CinemaSearchIndexTestView),
-    ('/test_film', FilmSearchIndexTestView),
+    # ('/update_film', UpdateBFilmView),
+    # ('/update_cinema', UpdateBCinemaView),
+    # ('/delete_all_cinema_docs', DeleteAllSearchCinemaDocumentsView),
+    # ('/delete_all_film_docs', DeleteAllSearchFilmDocumentsView),
+    # ('/search_cinema', CinemaSearchIndexView),
+    # ('/search_film', FilmSearchIndexView),
+    # ('/count_cinemas', CountCinemasView),
+    # ('/test_genre_film', FilmGenreTestView),
+    # ('/count_films', CountFilmsView),
+    # ('/test_cinema', CinemaSearchIndexTestView),
+    # ('/test_film', FilmSearchIndexTestView),
 
     # should be exchanged to /botAPI_KINOHOD like unique link
     ('/bot{}'.format(settings.KINOHOD_API_KEY), CommandReceiveView),

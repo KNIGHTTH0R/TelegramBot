@@ -96,8 +96,6 @@ class Parser(object):
         """
         self.__determine_place(limit)
 
-        # self.__determine_place_api()
-
     def __determine_place(self, limit=settings.CINEMA_TO_SHOW):
         self.data.place = ModelSearch.query_cinema(
             self.splitted,
@@ -118,10 +116,10 @@ class Parser(object):
                 return m[:-1]
             return m
 
-        def get_text_date(text, d):
+        def get_text_date(search_text, d):
             text_date = re.search(
                 '\d{1,2} ' + word_root(d.strftime(format='%B').lower()),
-                text
+                search_text
             )
 
             if text_date:

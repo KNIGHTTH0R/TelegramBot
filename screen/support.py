@@ -37,8 +37,8 @@ def send_approved_mail(text):
 
     try:
         mail.send_mail(sender='endnikita@gmail.com',
-                       to='support@kinohod.ru',
-                       # to='testbot@kinohod.ru',
+                       # to='support@kinohod.ru',
+                       to='testbot@kinohod.ru',
                        # to='nikita_end@mail.ru',
                        subject='Need support, Info from Telegram bot',
                        body=text)
@@ -219,7 +219,7 @@ support_dict = {
     settings.YES_QR: Msg(settings.HOW_CAN_HELP, None, start_markup()),
     settings.YES_SERT_MAIL: Msg(settings.HOW_CAN_HELP, None, start_markup()),
     settings.ONLINE_ISNT_VALID: Msg(
-        settings.HOW_CAN_HELP, None, start_markup()
+        settings.CANNOT_HELP, None, start_markup()
     ),
 }
 

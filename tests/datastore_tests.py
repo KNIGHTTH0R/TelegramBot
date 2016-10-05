@@ -26,3 +26,9 @@ class DatastoreTestCase(unittest.TestCase):
         # Alternatively, you could disable caching by
         # using ndb.get_context().set_cache_policy(False)
         ndb.get_context().clear_cache()
+
+    def test_film_genre(self):
+        pass
+
+    def tearDown(self):
+        self.testbed.deactivate()
