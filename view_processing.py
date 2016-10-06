@@ -1,5 +1,7 @@
 # coding: utf8
 
+from datetime import datetime
+
 from screen.cinema_seances import detect_cinema_seances
 from screen.movie_info import display_movie_info
 from screen.running_movies import get_cinema_movies
@@ -51,8 +53,10 @@ def display_afisha(request, bot, chat_id, tuid):
             return True
 
         if data.place and not flag:
-            send_reply(bot, chat_id, get_cinema_movies,
-                       int(data.place[0].kinohod_id), settings.CINEMA_TO_SHOW)
+            send_reply(
+                bot, chat_id, get_cinema_movies, int(data.place[0].kinohod_id),
+                settings.CINEMA_TO_SHOW, datetime.now().strftime('%d%m%Y')
+            )
             return True
 
     bot.sendChatAction(chat_id, action='typing')
@@ -109,6 +113,7 @@ def display_cinemas(request, bot, chat_id, tuid):
                 parse_mode='Markdown'
             )
 
+            date = datetime.now().strftime('%d%m%Y')
             send_reply(bot, chat_id, get_cinema_movies,
-                       p.kinohod_id, settings.CINEMA_TO_SHOW)
+                       p.kinohod_id, settings.CINEMA_TO_SHOW, date)
     return True

@@ -3,6 +3,8 @@
 import urllib
 import requests
 
+from datetime import datetime
+
 import botan
 
 from telepot.namedtuple import InlineKeyboardMarkup
@@ -129,17 +131,28 @@ def display_movie_nearest_cinemas(tuid, bot, chat_id, text, cmd, profile):
 def display_cinema(bot, payload, cmd, chat_id):
     bot.sendChatAction(chat_id, action='typing')
 
+    if 'in' in cmd:
+        in_index = cmd.index('in')
+        date = cmd[in_index + 2:]
+        cmd = cmd[:in_index]
+    else:
+        date = datetime.now().strftime('%d%m%Y')
+
     if 'callback_query' in payload:
         index_of_v = cmd.index('v')
         cinema_id = int(cmd[len('/show'): index_of_v])
         number_to_display = int(cmd[index_of_v + 1:])
         send_reply(bot, chat_id, get_cinema_movies,
-                   cinema_id, number_to_display,
+                   cinema_id, number_to_display, date,
                    success=int(payload['callback_query']['id']))
     else:
+        # try:
         cinema_id = int(cmd[len('/show'):])
+
         send_reply(bot, chat_id, get_cinema_movies, cinema_id,
-                   settings.FILMS_TO_DISPLAY)
+                   settings.FILMS_TO_DISPLAY, date)
+        # except:
+        #     bot.sendMessage(chat_id, settings.DONT_UNDERSTAND)
 
 
 def display_movies(bot, payload, cmd, chat_id):

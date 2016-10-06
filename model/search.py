@@ -157,12 +157,21 @@ class ModelSearch(object):
             return None
 
         _text = '~{}'.format(' OR ~'.join(_pre))
+
         query_s = 'metro: ({}) OR address: ({}) OR shortTitle: ({})'.format(
             _text, _text, _text
         )
 
         query_options = search.QueryOptions(limit=limit)
-        query = search.Query(query_string=query_s, options=query_options)
+
+        try:
+            query = search.Query(query_string=query_s, options=query_options)
+        except search.Error:
+            return
+        except search.QueryError:
+            return
+        except Exception:
+            return
 
         try:
             results = index.search(query)

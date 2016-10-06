@@ -64,6 +64,7 @@ URL_SEANCES = 'https://kinohod.ru/api/rest/partner/v1/movies/{}/schedules?apikey
 URL_FULL_SEANCES = 'https://kinohod.ru/api/rest/partner/v1/movies/{}/schedules?apikey={}'
 URL_CINEMA_SEANCES = 'https://kinohod.ru/api/rest/partner/v1/cinemas/{}/schedules?apikey={}&limit=10&date={}'
 URL_CINEMA_MOVIE = 'https://kinohod.ru/api/rest/partner/v1/cinemas/{}/schedules?apikey={}'
+URL_CINEMA_MOVIE_DATE = 'https://kinohod.ru/api/rest/partner/v1/cinemas/{}/schedules?date={}&apikey={}'
 CINEMA_HALL = 'https://kinohod.ru/api/rest/partner/v1/schedules/{}/hallscheme?apikey={}&limit=20'
 URL_IMDB = 'http://www.imdb.com/title/tt{}'
 URL_CANCEL_TOKEN = 'https://kinohod.ru/ch/'

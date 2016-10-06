@@ -41,13 +41,13 @@ def _construct_markup(cinema_id, movie_id, day):
     def make_markup(a):
         first, second = a
         return InlineKeyboardMarkup(inline_keyboard=[[
-            dict(text=first,
-                 callback_data=(
-                     '/c{}m{}d{}'.format(cinema_id, movie_id, day_id_m[first])
-                 )),
             dict(text=second,
                  callback_data=(
                      '/c{}m{}d{}'.format(cinema_id, movie_id, day_id_m[second])
+                 )),
+            dict(text=first,
+                 callback_data=(
+                     '/c{}m{}d{}'.format(cinema_id, movie_id, day_id_m[first])
                  )),
             dict(text=settings.ANOTHER_DAY,
                  callback_data=(

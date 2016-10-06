@@ -7,7 +7,7 @@ import json
 
 from collections import namedtuple
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from StringIO import StringIO
 
 from telepot.namedtuple import InlineKeyboardMarkup
@@ -19,12 +19,15 @@ import settings
 IMovieCinema = namedtuple('IMovieCinema', ['title', 'link', 'link_info'])
 
 
-def process_movies(data, number_of_movies, callback_url,
+def process_movies(data, number_of_movies, callback_url, date,
                    next_url='/info', **kwargs):
 
     cinema_id = kwargs.get('cinema_id')
     separator = kwargs.get('separator')
     next_info_url = kwargs.get('info_url')
+
+    date = datetime.strptime(date, '%d%m%Y')
+    now = datetime.now()
 
     videos, premiers = [], []
 
@@ -46,7 +49,9 @@ def process_movies(data, number_of_movies, callback_url,
                     InlineKeyboardMarkup(inline_keyboard=[[
                         dict(text=settings.FIRST_TEN,
                              callback_data=(callback_url.format(
-                                 settings.FILMS_TO_DISPLAY)))
+                                 settings.FILMS_TO_DISPLAY,
+                                 datetime.now().strftime('%d%m%Y')
+                             )))
                     ]]))
 
         if cinema_id and separator and next_info_url:
@@ -77,11 +82,30 @@ def process_movies(data, number_of_movies, callback_url,
         else:
             premiers.append(f_info)
 
+    dformat = '%d%m%Y'
+    tomorrow_str = (datetime.now() + timedelta(days=1)).strftime(dformat)
+    now_str = now.strftime(dformat)
+
+    markup_tomorrow_text = (settings.ON_TOMORROW if now.date() == date.date()
+                            else settings.ON_TODAY)
+
+    markup_tomorrow_date = (tomorrow_str if now.date() == date.date()
+                            else now_str)
+
+    more_date = now_str if now.date() == date.date() else tomorrow_str
+
     mark_up = InlineKeyboardMarkup(inline_keyboard=[
         [dict(text=settings.MORE,
               callback_data=(callback_url.format(
-                  number_of_movies + settings.FILMS_TO_DISPLAY)
-              ))]
+                  number_of_movies + settings.FILMS_TO_DISPLAY,
+                  more_date
+              ))),
+         dict(text=markup_tomorrow_text,
+              callback_data=(callback_url.format(
+                  number_of_movies + settings.FILMS_TO_DISPLAY,
+                  markup_tomorrow_date
+              )))
+         ]
     ])
 
     if expanded_info:
@@ -117,8 +141,10 @@ def display_running_movies_api(number_of_movies):
 def process_movies_db(number_of_movies, callback_url,
                       next_url='/info', **kwargs):
 
-    data = Film.query().fetch(
-        offset=number_of_movies - settings.FILMS_TO_DISPLAY,
+    data = Film.query().order(Film.premiereDateWorld).fetch(
+        offset=(number_of_movies - settings.FILMS_TO_DISPLAY
+                if number_of_movies > settings.FILMS_TO_DISPLAY
+                else number_of_movies),
         limit=settings.FILMS_TO_DISPLAY
     )
 
@@ -157,7 +183,7 @@ def process_movies_db(number_of_movies, callback_url,
     mark_up = InlineKeyboardMarkup(inline_keyboard=[
         [dict(text=settings.MORE,
               callback_data=(callback_url.format(
-                  number_of_movies + settings.FILMS_TO_DISPLAY)
+                  number_of_movies + 2 * settings.FILMS_TO_DISPLAY)
               ))]
     ])
 
@@ -186,17 +212,23 @@ def display_running_movies(number_of_movies):
     return process_movies_db(number_of_movies, callback_url)
 
 
-def get_cinema_movies(cinema_id, number_of_movies):
-    url = settings.URL_CINEMA_MOVIE.format(cinema_id, settings.KINOHOD_API_KEY)
+def get_cinema_movies(cinema_id, number_of_movies, date):
+
+    url = settings.URL_CINEMA_MOVIE_DATE.format(
+        cinema_id,
+        date,
+        settings.KINOHOD_API_KEY,
+    )
+
     with contextlib.closing(urllib2.urlopen(url)) as jf:
         data = json.loads(jf.read())
 
     data = [d['movie'] for d in data]
-    callback_url = '/show' + str(cinema_id) + 'v{}'
+    callback_url = '/show' + str(cinema_id) + 'v{}' + 'in{}'
 
     if len(data) < number_of_movies:
         number_of_movies = len(data)
 
-    return process_movies(data, number_of_movies, callback_url,
+    return process_movies(data, number_of_movies, callback_url, date,
                           next_url='/c', info_url='/info',
                           cinema_id=cinema_id, separator='m')
