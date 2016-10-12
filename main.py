@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# coding: utf-8
 #
 # Copyright 2007 Google Inc.
 #
@@ -42,6 +43,29 @@ def set_film_models():
     for k, f in films.iteritems():
         schedules = get_schedule(f.get('id'))
         set_film_model(f, schedules)
+
+
+def update_film_table(index_name='films'):
+    films, places = get_data('film')
+
+    for k, f in films.iteritems():
+
+        o = Film.get_by_id(f.get('id'))
+
+        if not o:
+            film_id = f.get('id')
+
+            schedules = get_schedule(film_id)
+            set_film_model(f, schedules)
+
+            o = Film.get_by_id(film_id)
+
+            ModelSearch.add_document(
+                ModelSearch.create_film_document(
+                    doc_id=o.key.urlsafe(),
+                    film=o
+                ), index_name=index_name
+            )
 
 
 class UpdateBFilmView(webapp2.RedirectHandler):
@@ -155,6 +179,11 @@ class FilmGenreTestView(webapp2.RedirectHandler):
         )
 
 
+class CronFilmTableUpdateView(webapp2.RedirectHandler):
+    def get(self, *args, **kwargs):
+        deferred.defer(update_film_table, )
+
+
 app = webapp2.WSGIApplication([
     # ('/update_film', UpdateBFilmView),
     # ('/update_cinema', UpdateBCinemaView),
@@ -167,7 +196,7 @@ app = webapp2.WSGIApplication([
     # ('/count_films', CountFilmsView),
     # ('/test_cinema', CinemaSearchIndexTestView),
     # ('/test_film', FilmSearchIndexTestView),
-
+    ('/film_update', CronFilmTableUpdateView),
     # should be exchanged to /botAPI_KINOHOD like unique link
     ('/bot{}'.format(settings.KINOHOD_API_KEY), CommandReceiveView),
 ], debug=True)
