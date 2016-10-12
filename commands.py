@@ -19,11 +19,14 @@ from screen.seances import get_seances
 from screen.help import get_help
 from screen.movie_info import display_movie_info
 from screen.cinema_seances import detect_cinema_seances
-from screen.running_movies import get_cinema_movies, display_running_movies
+from screen.running_movies import (get_cinema_movies, display_running_movies,
+                                   display_running_movies_api)
+from screen.cinema_where_film import get_cinemas_where_film
 from settings import start_markup
 from model.base import set_model, get_model
+from model.film import Film
 from model.base import UserProfile, ReturnTicket
-
+from processing.parser import Parser
 
 import settings
 
@@ -32,7 +35,8 @@ def send_reply(bot, chat_id, func, *args, **kwargs):
     r = func(*args)
 
     if 'msg' in kwargs and kwargs['msg']:
-        bot.sendMessage(chat_id, kwargs['msg'])
+        bot.sendMessage(chat_id, kwargs['msg'],
+                        parse_mode=kwargs.get('parse_mode'))
 
     markup = None
     if isinstance(r, tuple):
@@ -44,7 +48,8 @@ def send_reply(bot, chat_id, func, *args, **kwargs):
     try:
         bot.sendMessage(chat_id, r, parse_mode='Markdown', reply_markup=markup)
     except:
-        bot.sendMessage(chat_id, settings.DONT_UNDERSTAND)
+        bot.sendMessage(chat_id, settings.DONT_UNDERSTAND,
+                        parse_mode='Markdown')
 
     if 'success' in kwargs:
         try:
@@ -68,10 +73,22 @@ def display_help(bot, payload, cmd, chat_id):
 
 def display_nearest(bot, payload, cmd, chat_id):
     bot.sendChatAction(chat_id, action='typing')
+
+    base_url = '/nearest'
+    movie_id = None
+
     if 'callback_query' in payload:
-        number_to_display = int(cmd[len('/nearest'):])
+        if 'm' in cmd:
+            m_index = cmd.index('m')
+            number_to_display = int(cmd[len(base_url): m_index])
+            movie_id = int(cmd[m_index + 1:])
+            next_url = '/c'
+        else:
+            number_to_display = int(cmd[len(base_url):])
+            next_url = '/show'
+
         send_reply(bot, chat_id, get_nearest_cinemas,
-                   bot, chat_id, number_to_display,
+                   bot, chat_id, number_to_display, movie_id, next_url,
                    success=int(payload['callback_query']['id']))
     else:
         bot.sendMessage(chat_id, settings.ALLOW_LOCATION)
@@ -118,12 +135,27 @@ def display_location_seance(bot, payload, cmd, chat_id):
         pass
 
 
+def display_cinemas_where_film(bot, payload, cmd, chat_id):
+
+    if 'callback_query' not in payload:
+        return
+
+    bot.answerCallbackQuery(
+        callback_query_id=int(payload['callback_query']['id']), text=':)'
+    )
+
+    index_num = cmd.index('num')
+    movie_id = int(cmd[len('/where_film'): index_num])
+    num = int(cmd[index_num + len('num'):])
+
+    film = Film.get_by_id(str(movie_id))
+    send_reply(bot, chat_id, get_cinemas_where_film, film, num)
+
+
 def display_movie_nearest_cinemas(tuid, bot, chat_id, text, cmd, profile):
     next_url = '/c'
-
     i_n = profile.cmd.index('num')
     movie_id = profile.cmd[len('/location'): i_n]
-
     send_reply(bot, chat_id, get_nearest_cinemas,
                bot, chat_id, settings.CINEMA_TO_SHOW, movie_id, next_url)
 
@@ -146,25 +178,23 @@ def display_cinema(bot, payload, cmd, chat_id):
                    cinema_id, number_to_display, date,
                    success=int(payload['callback_query']['id']))
     else:
-        # try:
         cinema_id = int(cmd[len('/show'):])
-
         send_reply(bot, chat_id, get_cinema_movies, cinema_id,
                    settings.FILMS_TO_DISPLAY, date)
-        # except:
-        #     bot.sendMessage(chat_id, settings.DONT_UNDERSTAND)
 
 
 def display_movies(bot, payload, cmd, chat_id):
     bot.sendChatAction(chat_id, action='typing')
     if 'callback_query' in payload:
         number_to_display = int(cmd[7:len(cmd)])
-        send_reply(bot, chat_id, display_running_movies,
+        # display_running_movies
+        send_reply(bot, chat_id, display_running_movies_api,
                    number_to_display,
                    success=int(payload['callback_query']['id']))
     else:
+        # display_running_movies
         send_reply(bot, chat_id,
-                   display_running_movies, settings.FILMS_TO_DISPLAY)
+                   display_running_movies_api, settings.FILMS_TO_DISPLAY)
 
 
 def films_category(bot, payload, cmd, chat_id):
@@ -173,28 +203,28 @@ def films_category(bot, payload, cmd, chat_id):
     :param chat_id: pk
     :return:
     """
-    deferred.defer(set_model, cls=UserProfile, pk=chat_id, state='films')
+    # deferred.defer(set_model, cls=UserProfile, pk=chat_id, state='films')
+    display_movies(bot, payload, cmd, chat_id)
 
 
 def cinema_category(bot, payload, cmd, chat_id):
     """
-    it is mean that in search in parse func will be in cinema scenario
+    it is mean that in search in parse func will cinema status
     :param chat_id: pk
     :return:
     """
-    deferred.defer(set_model, cls=UserProfile, pk=chat_id, state='cinema')
+    # deferred.defer(set_model, cls=UserProfile, pk=chat_id, state='cinema')
     pass
 
 
-def base_category(bot, payload, cmd, chat_id):
-    """
-    it is mean that in search in parse func will be in cinema scenario
-    :param chat_id: pk
-    :return:
-    """
-    deferred.defer(set_model, cls=UserProfile, pk=chat_id, state='base')
-    display_movies(bot, payload, cmd, chat_id)
-    pass
+# def base_category(bot, payload, cmd, chat_id):
+#     """
+#     it is mean that in search in parse func will be in cinema scenario
+#     :param chat_id: pk
+#     :return:
+#     """
+#     deferred.defer(set_model, cls=UserProfile, pk=chat_id, state='base')
+#     pass
 
 
 def display_seances_cinema(bot, payload, cmd, chat_id):
@@ -219,6 +249,65 @@ def display_seances_cinema(bot, payload, cmd, chat_id):
         d = settings.TODAY
         send_reply(bot, chat_id, detect_cinema_seances,
                    cinema_id, movie_id, d)
+
+
+def callback_seance_text(tuid, bot, chat_id, text, cmd, profile):
+
+    # in profile.cmd should be movie id
+    # need concatenate movie with place
+
+    if 'num' not in profile.cmd:
+        return
+
+    i_n = profile.cmd.index('num')
+    movie_id = profile.cmd[len('/location'): i_n]
+
+    film = Film.get_by_id(movie_id)
+
+    if not film.cinemas or len(film.cinemas) < 1:
+        bot.sendMessage(chat_id, settings.NO_FILM_SEANCE)
+        return
+
+    cmd = cmd.encode('utf-8')
+    parser = Parser(request=cmd, state='cinema')
+    parser.parse()
+
+    bot.sendChatAction(chat_id, action='typing')
+
+    seances = []
+
+    if not parser.data.place:
+        pass
+        # bot.sendMessage(chat_id, settings.CINEMA_NOT_FOUND)
+    else:
+        for p in parser.data.place:
+            if not p or p.key not in film.cinemas:
+                continue
+
+            seances.append(
+                settings.RowCinema(
+                    p.shortTitle, p.address, p.mall,
+                    '/c{}m{}'.format(p.kinohod_id, movie_id)
+                )
+            )
+
+    if len(seances) < 1:
+        bot.sendMessage(chat_id, settings.NO_FILM_SEANCE)
+        send_reply(bot, chat_id, get_cinemas_where_film, film)
+        return
+
+    template = settings.JINJA_ENVIRONMENT.get_template('cinema_where_film.md')
+    msg = template.render({'film_name': film.title, 'seances': seances})
+
+    mark_up = InlineKeyboardMarkup(inline_keyboard=[
+        [dict(text=settings.MORE,
+              callback_data='/where_film{}num{}'.format(
+                  film.kinohod_id,
+                  settings.CINEMAS_TO_DISPLAY
+              ))]
+    ])
+
+    bot.sendMessage(chat_id, msg, parse_mode='Markdown', reply_markup=mark_up)
 
 
 def display_movie_time_selection(bot, payload, cmd, chat_id):
@@ -287,26 +376,38 @@ def display_schedule(bot, payload, cmd, chat_id):
         bot.sendMessage(chat_id, settings.SERVER_NOT_VALID)
 
 
-def display_info_full(bot, payload, cmd, chat_id):
-    bot.sendMessage(chat_id, settings.INFO_FULL)
+def display_full_info(bot, payload, cmd, chat_id):
+    display_info(bot, payload, cmd, chat_id,
+                 full=True,
+                 prefix_length=len('/fullinfo'))
 
 
-def display_info(bot, payload, cmd, chat_id):
+def display_info(bot, payload, cmd, chat_id, full=False,
+                 prefix_length=len('/info')):
+
     t_uid = payload['message']['from']['id']
-    movie_id = cmd[5:len(cmd)]
+    movie_id = cmd[prefix_length:len(cmd)]
 
     if not str(movie_id).isdigit():
         bot.sendMessage(chat_id, settings.INFO_NOT_FULL.format(movie_id))
-
         return
-    message, mark_up, movie_poster = display_movie_info(movie_id, t_uid)
 
-    if not message or not mark_up or not movie_poster:
+    film = Film.get_by_id(str(movie_id))
+    if len(film.cinemas) < 1:
+        return
+
+    message, mark_up, movie_poster = display_movie_info(
+        movie_id, t_uid, next_url='/location', full=full
+    )
+
+    if not message:
         bot.sendMessage(chat_id, settings.SERVER_NOT_VALID)
         return
 
-    bot.sendChatAction(chat_id, 'upload_photo')
-    bot.sendPhoto(chat_id, ('poster.jpg', movie_poster))
+    if movie_poster:
+        bot.sendChatAction(chat_id, 'upload_photo')
+        bot.sendPhoto(chat_id, ('poster.jpg', movie_poster))
+
     bot.sendMessage(chat_id, message, reply_markup=mark_up,
                     parse_mode='Markdown')
 
