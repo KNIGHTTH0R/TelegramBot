@@ -1,16 +1,16 @@
 # coding: utf-8
 
+import re
 from datetime import datetime
 
-from google.appengine.ext import ndb, deferred
+from google.appengine.ext import ndb
 from google.appengine.api import search
 
 from settings import MORPH
-from data import get_data, get_schedule
 from processing.mapping import stop_words
 
 from cinema import Cinema
-from film import Film, set_film_model
+from film import Film
 
 import settings
 
@@ -73,6 +73,14 @@ class ModelSearch(object):
         else:
             metro_s = 'typical'
 
+        mall = 'typical'
+        if cinema.mall:
+            mall = ModelSearch._p(cinema.mall)
+            mall = re.sub(
+                '\d+|\/|\.|,|\?|\}|\{|\[|\]|\-|;|`|~|:|\*|&|$|%|#|@|!|<|>|«|»|ТРЦ|ТЦ',
+                '', mall
+            )
+
         return search.Document(
             doc_id=doc_id,
 
@@ -86,6 +94,11 @@ class ModelSearch(object):
                 search.TextField(
                     name='metro',
                     value=metro_s
+                ),
+
+                search.TextField(
+                    name='mall',
+                    value=mall
                 )
             ]
         )
@@ -158,8 +171,8 @@ class ModelSearch(object):
 
         _text = '~{}'.format(' OR ~'.join(_pre))
 
-        query_s = 'metro: ({}) OR address: ({}) OR shortTitle: ({})'.format(
-            _text, _text, _text
+        query_s = 'metro: ({}) OR address: ({}) OR shortTitle: ({}) OR mall: ({})'.format(
+            _text, _text, _text, _text
         )
 
         query_options = search.QueryOptions(limit=limit)
@@ -248,32 +261,3 @@ def create_film_documents():
             ModelSearch.create_film_document(o.key.urlsafe(), o),
             index_name='films'
         )
-
-
-def async_update_film_table(films=None):
-    deferred.defer(update_film_table, films)
-
-
-def update_film_table(films=None, index_name='films'):
-
-    if not films:
-        films, places = get_data('film')
-
-    for k, f in films.iteritems():
-
-        o = Cinema.get_by_id(f.get('id'))
-
-        if not o:
-            film_id = f.get('id')
-
-            schedules = get_schedule(film_id)
-            set_film_model(f, schedules)
-
-            o = Cinema.get_by_id(film_id)
-
-            ModelSearch.add_document(
-                ModelSearch.create_film_document(
-                    doc_id=o.key.urlsafe(),
-                    film=o
-                ), index_name=index_name
-            )
