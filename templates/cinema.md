@@ -1,4 +1,4 @@
 *Кинотеатры*
 {% for s in cinemas -%}
-_{{ s.title }}_ {{ s.link }}
+ _{{ s.short_name }}_ {% if s.address %} {{ s.address }}{% endif %} {% if s.mall %} {{ s.mall }} {% endif %} {{ s.link }}
 {% endfor %}

@@ -1,3 +1,4 @@
+{% if title %} *Кинотеатр: {{ title }}*  {% endif %}
 {{ sign_video }} Фильмы в прокате:
 {% for video in videos -%}
  {{ video.title }} {{ video.link }}

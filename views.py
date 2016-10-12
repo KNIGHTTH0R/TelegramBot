@@ -2,7 +2,6 @@
 
 import json
 
-from datetime import datetime, timedelta
 from collections import OrderedDict, namedtuple
 
 import endpoints
@@ -15,18 +14,18 @@ from google.appengine.ext import deferred
 from botan import track
 from commands import (display_nearest, display_seance, send_reply,
                       display_cinema, display_seances_cinema, callback_seance,
-                      display_schedule, display_info_full, display_movies,
+                      display_schedule, display_movies,
                       display_info, display_help, display_movie_time_selection,
                       display_return, callback_return, display_location_seance,
-                      callback_movie_time_selection,
-                      display_movie_nearest_cinemas)
-from screen.support import (send_mail_story, start_markup,
-                            film_markup, cinema_markup, support_generation)
+                      callback_movie_time_selection, callback_seance_text,
+                      display_movie_nearest_cinemas, display_full_info,
+                      display_cinemas_where_film)
+from screen.support import send_mail_story, start_markup, support_generation
 from screen.cinemas import get_nearest_cinemas
 from model.base import UserProfile
 from model.base import set_model, get_model
-from model.search import async_update_film_table
-from view_processing import display_afisha, display_films, display_cinemas
+from view_processing import display_afisha
+
 
 import settings
 
@@ -54,11 +53,12 @@ def make_instruction():
         display_cinema: ['/show'],
         display_seance: ['/seance'],
         display_movies: ['/movies'],
+        display_cinemas_where_film: ['/where_film'],
         display_movie_time_selection: ['/anytime'],
         display_location_seance: ['/location'],
         display_seances_cinema: ['/c'],
         display_schedule: ['/schedule'],
-        display_info_full: ['/info_full'],
+        display_full_info: ['/fullinfo'],
         display_info: ['/info'],
         display_return: ['/return']
     })
@@ -69,6 +69,7 @@ def callback_instruction():
         settings.NO_AGAIN: send_mail_story,
         settings.NO_MAIL_SENDED: send_mail_story,
         settings.ANOTHER_PAY_ER: send_mail_story,
+        '/location': callback_seance_text,
         '/seance': callback_seance,
         '/return': callback_return,
         '/anytime': callback_movie_time_selection,
@@ -76,7 +77,6 @@ def callback_instruction():
 
 
 def update_location(l, bot, chat_id, instructions):
-
     profile = set_model(UserProfile, chat_id, location=l)
     if not profile.cmd:
         bot.sendMessage(chat_id, settings.THANK_FOR_INFORMATION)
@@ -91,6 +91,7 @@ def update_location(l, bot, chat_id, instructions):
             display_location_seance):
         send_reply(bot, chat_id, display_movie_nearest_cinemas,
                    0, bot, chat_id, settings.CINEMA_TO_SHOW, '', profile)
+        deferred.defer(set_model, UserProfile, chat_id, cmd='update_location')
 
 
 class CommandReceiveView(webapp2.RequestHandler):
@@ -107,9 +108,9 @@ class CommandReceiveView(webapp2.RequestHandler):
         except ValueError:
             raise endpoints.BadRequestException(message='Invalid request body')
 
-        # try:
         cmd, is_group, profile, chat_id = None, False, None, None
         tuid, message_id = 0, 0
+
         if 'message' in payload:
             tuid = payload['message']['from']['id']
             chat_id = payload['message']['chat']['id']
@@ -145,7 +146,6 @@ class CommandReceiveView(webapp2.RequestHandler):
         # try:
         profile = get_model(UserProfile, chat_id)
         cmd = cmd.lower()
-        set_prev_cmd_flag = True
         func_detected_flag = False
 
         support_send = [
@@ -169,17 +169,22 @@ class CommandReceiveView(webapp2.RequestHandler):
                 if cb_fn:
                     func_detected_flag = True
                     cb_fn(tuid, bot, chat_id, profile.cmd, cmd, profile)
-                    # set_prev_cmd_flag = False
 
         if not func_detected_flag:
-
             Schema = namedtuple('Schema', ['reply', 'markup'])
 
             s = {
                 'base': Schema(display_afisha, start_markup),
-                'films': Schema(display_films, film_markup),
-                'cinema': Schema(display_cinemas, cinema_markup)
+                # 'films': Schema(display_films, start_markup),
+                # 'cinema': Schema(display_cinemas, start_markup)
             }
+
+            # TODO: need delete it before production
+            # TODO: sure that all states are not in 'cinema' or 'film' states
+            if profile.state != 'base':
+                profile.state = 'base'
+                deferred.defer(set_model, cls=UserProfile,
+                               pk=chat_id, state='base')
 
             if support_generation(cmd, bot, chat_id, message_id):
                 track(tuid=tuid,
@@ -200,12 +205,7 @@ class CommandReceiveView(webapp2.RequestHandler):
                         reply_markup=s[profile.state].markup())
                     track(tuid, 'miss understanding', 'invalid')
 
-        if set_prev_cmd_flag:
-            deferred.defer(set_model, UserProfile, chat_id, cmd=cmd)
-
-        now = datetime.now()
-        if profile.update and (profile.update - now) > timedelta(days=3):
-            async_update_film_table()
+        deferred.defer(set_model, UserProfile, chat_id, cmd=cmd)
 
         # except Exception as ex:
         #     return

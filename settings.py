@@ -12,6 +12,7 @@ import pymorphy2
 
 Row = namedtuple('Row', ['title', 'link'])
 RowDist = namedtuple('RowDist', ['title', 'distance', 'link'])
+RowCinema = namedtuple('RowCinema', ['short_name', 'address', 'mall', 'link'])
 
 MORPH = pymorphy2.MorphAnalyzer()
 
@@ -92,11 +93,13 @@ SIGN_VIDEO = '\xF0\x9F\x8E\xA5'.decode('utf-8')
 SIGN_CLIP = '\xf0\x9f\x93\x8e'.decode('utf-8')
 SIGN_PREMIER = '\xF0\x9F\x8E\xAC'.decode('utf-8')
 SIGN_TIP = '\xE2\x9C\x94'.decode('utf-8')
-SIGN_ACTOR = unicode('\xF0\x9F\x91\xA4', encoding='utf-8')  # .decode('utf-8')
+SIGN_ACTOR = unicode('\xF0\x9F\x8E\x8E', encoding='utf-8')  # .decode('utf-8')
 SIGN_NEW_ROW = '\n'.decode('utf-8')
 SIGN_SMILE_HELP = '\xE2\x96\xAA'.decode('utf-8')
 SIGN_DOWN_FINGER = '\xF0\x9F\x91\x87'.decode('utf-8')
 SIGN_FINGER = '\xF0\x9F\x91\x8D'.decode('utf-8')
+SIGN_GENRE = '\xF0\x9F\x8E\xAD'.decode('utf-8')
+SIGN_PRODUCER = '\xF0\x9F\x8E\xAC'.decode('utf-8')
 
 
 SIGN_RUB = 'P'
@@ -112,10 +115,13 @@ MORE_INFO = 'Подробнее о предложениях'
 TREILER = 'Трейлер'
 DONT_UNDERSTAND = 'Извините, я не понял, что именно вас интересует. Спросите еще раз или воспользуйтесь кнопками меню {}'.decode('utf-8').format(SIGN_SCREAMING)
 CINEMA_NOT_VALID = 'Кинотеатр не доступен сейчас'
-CINEMA_NOT_FOUND = 'Не удалось найти кинотеатр'
+CINEMA_NOT_FOUND = 'Не удалось найти такой кинотеатр, пересмотрите написанное'
 ON_TOMORROW = 'Завтра'
 ON_A_TOMORROW = 'Послезавтра'
 ON_TODAY = 'Сегодня'
+NO_FILM_SCHEDULE ='_{}_ фильм *{}* не показывает *{}*, можете выбрать другой день или вообще все другое'.decode('utf-8')
+FILM_NO_CINEMA = 'Увы, но фильм больше нигде не показывается {}'.decode('utf-8').format(SIGN_SCREAMING)
+FILM_NO_PLACE = 'Увы, но фильма в прокате уже нет {}'.decode('utf-8').format(SIGN_SCREAMING)
 NO_FILM_SEANCE = 'Увы, но сеансов на выбранный фильм нет {}'.decode('utf-8').format(SIGN_SCREAMING)
 NO_SEANCE = 'Нет сеансов на выбранный фильм в этом кинотеатре {}'.decode('utf-8').format(SIGN_SCREAMING)
 SERVER_NOT_VALID = 'Увы, сервер недоступен.'
@@ -131,7 +137,7 @@ TICKET_RETURNING_REPLY = 'У каждого кинотеатра свои пра
 
 ANOTHER = 'Другое'
 ANOTHER_DAY = 'Другой день'
-ENTER_LOCATION = 'Отправьте свое местоположение, для этого нажмите {},а затем location'.decode('utf-8').format(SIGN_CLIP)
+ENTER_LOCATION = 'Отправьте свое местоположение, для этого нажмите {},а затем location или введите название кинотеатра, торгового центра, станции метро'.decode('utf-8').format(SIGN_CLIP).encode('utf-8')
 DAY_CHANGED = 'Что - то не понял дату, выбрал завтра'
 ENTER_DATE = 'Введите день, когда хотите пойти посмотреть фильмец'
 # ANOTHER_CINEMA = 'Другой кинотеатр'
