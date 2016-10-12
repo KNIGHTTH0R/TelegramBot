@@ -26,7 +26,7 @@ class Parser(object):
         if request:
             for w in request.split(' '):
                 w = w.decode('utf-8')
-                if w not in stop_words and len(w) > 3:
+                if w not in stop_words and len(w) > 2:
                     parse = MORPH.parse(w)[0]
                     if 'VERB' not in parse.tag:
                         self.splitted.append(de_uncd(parse.normal_form))
@@ -40,9 +40,11 @@ class Parser(object):
 
         scenario = {
             'film': [(self.__parse_film, ), ],  # (self.parser_special, )
-            'cinema': [(self.determine_place, settings.CINEMA_TO_SHOW)],
+            'cinema': [(self.determine_place, settings.CINEMAS_TO_DISPLAY)],
+
             'time': [(self._detect_time, )],
-            'base': [(self.__parse_film, 1), (self.determine_place, 1),
+            'base': [(self.__parse_film, ),
+                     (self.determine_place, settings.CINEMA_TO_SHOW),
                      (self._detect_time, ), ]  # (self.parser_special, )
         }
 

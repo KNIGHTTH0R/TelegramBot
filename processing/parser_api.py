@@ -63,18 +63,18 @@ class ParserAPI(object):
         self._parse_special()
 
     def _parse_special(self):
-        try:
-            from google.appengine.ext import deferred
-            deferred.defer(self.__parse_genres())
-        except:
-            self.__parse_genres()
+        # try:
+        #     from google.appengine.ext import deferred
+        #     deferred.defer(self.__parse_genres())
+        # except:
+        self.__parse_genres()
 
         if not self.data.genre and self.splitted:
-            try:
-                from google.appengine.ext import deferred
-                deferred.defer(self.__parse_actor_producer())
-            except:
-                self.__parse_actor_producer()
+            # try:
+            #     from google.appengine.ext import deferred
+            #     deferred.defer(self.__parse_actor_producer())
+            # except:
+            self.__parse_actor_producer()
 
     def __parse_genres(self):
         genre_name = None
