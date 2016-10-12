@@ -9,6 +9,9 @@ from datetime import timedelta, datetime
 
 from telepot.namedtuple import InlineKeyboardMarkup
 
+from model.film import Film
+from model.cinema import Cinema
+
 import settings
 
 
@@ -37,6 +40,8 @@ def _construct_markup(cinema_id, movie_id, day):
         if d in days_reverse:
             ds.remove(days_reverse[d])
             return make_markup(ds)
+        # this mean another day (not today, tomorrow and not after tomorrow)
+        return make_markup([settings.ON_TODAY, settings.ON_TOMORROW])
 
     def make_markup(a):
         first, second = a
@@ -107,8 +112,10 @@ def detect_cinema_seances(cinema_id, movie_id, day):
         place = html_data[0]['cinema']['title']
 
     for info in html_data:
+
         if int(movie_id) != int(info['movie']['id']):
             continue
+
         seances = []
         for s in info['schedules']:
             m_p = s['minPrice'] if s['minPrice'] else settings.DO_NOT_KNOW
@@ -148,6 +155,13 @@ def detect_cinema_seances(cinema_id, movie_id, day):
             'date': day_str
         }), markup
 
-    return '/show{} movie {} {}'.decode('utf-8').format(
-        cinema_id, movie_id, settings.NO_SEANCE
-    ), None
+    cinema = Cinema.get_by_id(str(cinema_id))
+    film = Film.get_by_id(str(movie_id))
+    markup = _construct_markup(cinema_id, movie_id, day)
+
+    day = day.strftime('%d.%m') if isinstance(day, datetime) else ''
+    return settings.NO_FILM_SCHEDULE.format(
+        cinema.title if cinema else '',
+        film.title if film else '',
+        day
+    ), markup

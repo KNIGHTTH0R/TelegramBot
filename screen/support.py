@@ -9,27 +9,13 @@ from telepot.namedtuple import ReplyKeyboardMarkup, KeyboardButton
 from google.appengine.api import mail
 from google.appengine.ext import deferred
 
-from commands import films_category, cinema_category, base_category
+from commands import films_category
+from commands import cinema_category
+# from commands import base_category
 
 from settings import start_markup
 
 import settings
-
-
-def film_markup():
-    return ReplyKeyboardMarkup(keyboard=[
-        [KeyboardButton(text=settings.AFISHA),
-         KeyboardButton(text=settings.CINEMA)],
-        [KeyboardButton(text=settings.SUPPORT_INFO)]
-    ])
-
-
-def cinema_markup():
-    return ReplyKeyboardMarkup(keyboard=[
-        [KeyboardButton(text=settings.FILMS),
-         KeyboardButton(text=settings.AFISHA)],
-        [KeyboardButton(text=settings.SUPPORT_INFO)]
-    ])
 
 
 def send_approved_mail(text):
@@ -89,21 +75,21 @@ support_dict = {
     settings.FILMS: Msg(
         settings.FILM_INFO,
         None,
-        film_markup(),
+        start_markup(),  # film_markup(),
         films_category,
     ),
 
-    settings.AFISHA: Msg(
-        settings.AFISHA_INFO,
-        None,
-        start_markup(),
-        base_category,
-    ),
+    # settings.AFISHA: Msg(
+    #     settings.AFISHA_INFO,
+    #     None,
+    #     start_markup(),
+    #     base_category,
+    # ),
 
     settings.CINEMA: Msg(
         settings.CINEMA_INFO,
         None,
-        cinema_markup(),
+        start_markup(),  # cinema_markup(),
         cinema_category,
     ),
 

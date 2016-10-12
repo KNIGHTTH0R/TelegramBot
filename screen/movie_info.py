@@ -4,6 +4,8 @@ import contextlib
 import urllib2
 import json
 
+from collections import namedtuple
+
 from telepot.namedtuple import InlineKeyboardMarkup
 
 from model.film import Film
@@ -23,17 +25,24 @@ def _get_movie_poster(poster_hash):
         return
     ab, cd = poster_hash[0:2], poster_hash[2:4]
     url = '{}{}/{}/{}'.format(settings.URL_BASE_P, ab, cd, poster_hash)
-    poster = urllib2.urlopen(url)
-    return poster
+    try:
+        poster = urllib2.urlopen(url)
+        return poster
+    except:
+        return
 
 
-def display_movie_info(movie_id, telegram_user_id, next_url='/seance'):
+def display_movie_info(movie_id, telegram_user_id,
+                       next_url='/seance', full=False):
 
     film = Film.get_by_id(str(movie_id))
     if not film:
         display_movie_info_api(movie_id, telegram_user_id, next_url='/seance')
 
     movie_poster = _get_movie_poster(film.poster.name)
+
+    # markup = None
+    # if len(film.cinemas) < 1:
 
     if film.trailers and len(film.trailers) > 0:
 
@@ -52,6 +61,7 @@ def display_movie_info(movie_id, telegram_user_id, next_url='/seance'):
                      settings.CINEMAS_TO_DISPLAY)
                  )),
         ]])
+
     else:
         markup = InlineKeyboardMarkup(inline_keyboard=[[
             dict(text=settings.CHOOSE_SEANCE,
@@ -60,28 +70,32 @@ def display_movie_info(movie_id, telegram_user_id, next_url='/seance'):
                  ))
         ]])
 
+    actors = (film.actors[:3]
+              if film.actors and len(film.actors) > 3 else film.actors)
+
     template = settings.JINJA_ENVIRONMENT.get_template('movies_info.md')
+
+    Annotation = namedtuple('Annotation', ['title', 'link'])
+    ann_o = Annotation(film.annotationFull if full else film.annotationShort,
+                       '/fullinfo{}'.format(movie_id) if not full else '')
+
     return (template.render({
         'title': film.title,
-        'description': film.annotationFull,
-        'duration': '{}'.format(film.duration),
+        'description': ann_o,
 
+        'sign_genre': settings.SIGN_GENRE,
         'genres': ', '.join(
             [a.get().name.encode('utf-8') for a in film.genres]
         ).decode('utf-8'),
-
         'sign_actor': settings.SIGN_ACTOR,
         'actors': ', '.join(
-            [a.name.encode('utf-8') for a in film.actors]
-        ).decode('utf-8'),
-
-        'producers': ', '.join(
-            [a.name.encode('utf-8') for a in film.producers]
+            [a.name.encode('utf-8') for a in actors]
         ).decode('utf-8'),
 
         'directors': ', '.join(
             [a.name.encode('utf-8') for a in film.directors]
-        ).decode('utf-8')
+        ).decode('utf-8'),
+        'sign_producer': settings.SIGN_PRODUCER,
     }), markup, movie_poster)
 
 
