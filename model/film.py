@@ -114,6 +114,7 @@ class Film(ndb.Model):
     countVotes = ndb.IntegerProperty()
     productionYear = ndb.IntegerProperty()
     title = ndb.TextProperty()
+    ageRestriction = ndb.StringProperty()
     premiereDateWorld = ndb.DateTimeProperty()  # try to be more careful
     duration = ndb.IntegerProperty()
     grossRevenueWorld = ndb.IntegerProperty()  # often None
@@ -136,10 +137,11 @@ class Film(ndb.Model):
 def set_film_model(f, schedules):
     poster_landscape = f.get('posterLandscape')
     producers = f.get('producers')
-    genres = f.get('genres')
-    images = f.get('images')
+    _genres = f.get('genres')
+    _images = f.get('images')
     actors = f.get('actors')
-    poster = f.get('poster')
+    _rating = f.get('rating')
+    _poster = f.get('poster')
     directors = f.get('directors')
     companies = f.get('companies')
     premiere_date_world = f.get('premiereDateWorld')
@@ -149,24 +151,69 @@ def set_film_model(f, schedules):
     trailer_keys = []
     _upd_genres = []
 
-    if genres:
-        genres = []
-        for g in genres:
-            genres.append(
-                set_model(
-                    Genre, pk=g.get('id'),
-                    name=g.get('name'),
-                    kinohod_id=g.get('id')
-                ).key
-            )
+    def _process_rbg_name(_list, cls):
+        if _list and isinstance(_list, list):
+            _prepared = []
+            for im in _list:
+                if isinstance(im, dict):
+                    _prepared.append(cls(rgb=im.get('rgb'),
+                                         name=im.get('name')))
+                elif isinstance(im, (str, unicode)):
+                    _prepared.append(cls(rgb='0c0c0b', name=im))
+            return _prepared
+        elif _list and isinstance(_list, (str, unicode)):
+            if cls == Poster:
+                return cls(rgb='0c0c0b', name=_list)
+            return [cls(rgb='0c0c0b', name=_list)]
+        else:
+            return None
 
-            _upd_genres.append(Genre.get_by_id(g.get('id')))
+    images = _process_rbg_name(_images, cls=Image)
+    poster = _process_rbg_name(_poster, cls=Poster)
+
+    if _rating and isinstance(_rating, dict):
+        rating = _t(_rating, 'rating', float)
+    else:
+        rating = _t(f, 'rating', float)
+
+    if premiere_date_russia:
+        if 'T' in premiere_date_russia:
+            premiere_date_russia = premiere_date_russia.split('T')[0]
+
+        premiereDateRussia = (
+            datetime.strptime(premiere_date_russia, '%Y-%m-%d')
+            if premiere_date_russia else None
+        )
+    else:
+        _premiere = f.get('firstSeanceStime')
+        if _premiere:
+            _premiere = _premiere.split('T')[0]
+            premiereDateRussia = datetime.strptime(_premiere, '%Y-%m-%d')
+        else:
+            premiereDateRussia = None
+
+    genres = []
+    if _genres and isinstance(_genres, dict):
+        for g in _genres:
+            if isinstance(g, dict):
+                genres.append(
+                    set_model(
+                        Genre, pk=g.get('id'),
+                        name=g.get('name'),
+                        kinohod_id=g.get('id')
+                    ).key
+                )
+
+                _upd_genres.append(Genre.get_by_id(g.get('id')))
 
     if trailers and isinstance(trailers, list):
         for trailer in trailers:
             source = trailer.get('source')
             preview = trailer.get('preview')
             videos = trailer.get('videos')
+
+            if not videos:
+                videos = trailer.get('mobile_mp4')
 
             o = Trailer(
                 source=Source(
@@ -216,6 +263,7 @@ def set_film_model(f, schedules):
             name=poster_landscape.get('name')
         ) if poster_landscape else None,
 
+        ageRestriction = f.get('ageRestriction'),
         annotationFull=f.get('annotationFull'),
 
         producers=[
@@ -223,21 +271,18 @@ def set_film_model(f, schedules):
             for p in producers
         ] if producers else None,
 
-        genres=genres,
+        genres=genres if len(genres) else None,
 
         weight=_t(f, 'weight', int),
         kinohod_id=_t(f, 'id', int),
         is4dx=_t(f, 'is4dx', bool),
 
-        trailers=trailer_keys if trailer_keys else None,
+        trailers=trailer_keys if len(trailer_keys) > 0 else None,
 
         countries=([c for c in f.get('countries')]
                    if f.get('countries') else None),
 
-        images=[
-            Image(rgb=i.get('rgb'), name=i.get('name'))
-            for i in images
-        ] if images else None,
+        images=images,
 
         countVotes=_t(f, 'countVotes', int),
         productionYear=_t(f, 'productionYear', int),
@@ -249,25 +294,22 @@ def set_film_model(f, schedules):
         duration=_t(f, 'duration', int),
         grossRevenueWorld=_t(f, 'grossRevenueWorld', int),
         budget=_t(f, 'budget', int),
-        rating=_t(f, 'rating', float),
+        rating=rating,
         annotationShort=f.get('annotationShort'),
 
         actors=[
             Actor(name=a.get('name'), kinohod_id=a.get('id'))
-            for a in actors
+            for a in actors if isinstance(a, dict)
         ] if actors else None,
 
-        poster=Poster(
-            rgb=poster.get('rgb'),
-            name=poster.get('name')
-        ) if poster else None,
+        poster=poster,
 
         imdbId=_t(f, 'imdbId', int),
         isPresale=_t(f, 'isPresale', bool),
 
         directors=[
             Director(name=d.get('name'), kinohod_id=d.get('id'))
-            for d in directors
+            for d in directors if isinstance(d, dict)
         ] if directors else None,
 
         isDolbyAtmos=_t(f, 'isDolbyAtmos', bool),
@@ -277,9 +319,7 @@ def set_film_model(f, schedules):
             for c in companies
         ] if companies else None,
 
-        premiereDateRussia=datetime.strptime(
-            premiere_date_russia, '%Y-%m-%d'
-        ) if premiere_date_russia else None,
+        premiereDateRussia=premiereDateRussia,
 
         countComments=_t(f, 'countComments', int),
         distributorId=_t(f, 'distributorId', int),
@@ -289,3 +329,4 @@ def set_film_model(f, schedules):
     curr_f = Film.get_by_id(f['id'])
     for g in _upd_genres:
         g.add_film(curr_f)
+        g.put()
