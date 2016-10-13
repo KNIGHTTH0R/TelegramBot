@@ -41,9 +41,6 @@ def display_movie_info(movie_id, telegram_user_id,
 
     movie_poster = _get_movie_poster(film.poster.name)
 
-    # markup = None
-    # if len(film.cinemas) < 1:
-
     if film.trailers and len(film.trailers) > 0:
 
         trailer = film.trailers[0].get()
@@ -70,33 +67,67 @@ def display_movie_info(movie_id, telegram_user_id,
                  ))
         ]])
 
-    actors = (film.actors[:3]
-              if film.actors and len(film.actors) > 3 else film.actors)
-
-    template = settings.JINJA_ENVIRONMENT.get_template('movies_info.md')
-
     Annotation = namedtuple('Annotation', ['title', 'link'])
-    ann_o = Annotation(film.annotationFull if full else film.annotationShort,
-                       '/fullinfo{}'.format(movie_id) if not full else '')
 
-    return (template.render({
-        'title': film.title,
-        'description': ann_o,
+    if full:
+        template = settings.JINJA_ENVIRONMENT.get_template(
+            'movies_info_full.md'
+        )
 
-        'sign_genre': settings.SIGN_GENRE,
-        'genres': ', '.join(
-            [a.get().name.encode('utf-8') for a in film.genres]
-        ).decode('utf-8'),
-        'sign_actor': settings.SIGN_ACTOR,
-        'actors': ', '.join(
-            [a.name.encode('utf-8') for a in actors]
-        ).decode('utf-8'),
+        actors = film.actors
+        ann_o = Annotation(film.annotationFull, '')
+        return template.render({
+            'title': film.title,
+            'description': ann_o,
+            'duration': film.duration if film.duration else None,
+            'premier': (film.premiereDateRussia.strftime('%d.%m.%Y')
+                        if film.premiereDateRussia else None),
+            'sign_calendar': settings.SIGN_CALENDAR,
+            'age': film.ageRestriction if film.ageRestriction else None,
+            'sign_genre': settings.SIGN_GENRE,
+            'kinder': settings.SIGN_CHILD_AGE,
+            'sign_time': settings.SIGN_ALARM,
+            'genres': ', '.join(
+                [a.get().name.encode('utf-8') for a in film.genres]
+            ).decode('utf-8'),
+            'sign_actor': settings.SIGN_ACTOR,
+            'actors': ', '.join(
+                [a.name.encode('utf-8') for a in actors]
+            ).decode('utf-8'),
 
-        'directors': ', '.join(
-            [a.name.encode('utf-8') for a in film.directors]
-        ).decode('utf-8'),
-        'sign_producer': settings.SIGN_PRODUCER,
-    }), markup, movie_poster)
+            'directors': ', '.join(
+                [a.name.encode('utf-8') for a in film.directors]
+            ).decode('utf-8'),
+            'sign_producer': settings.SIGN_PRODUCER,
+        }), markup, movie_poster
+
+    else:
+        template = settings.JINJA_ENVIRONMENT.get_template('movies_info.md')
+        actors = (film.actors[:3] if film.actors and len(film.actors) > 3
+                  else film.actors)
+
+        ann_o = Annotation(
+            film.annotationShort,
+            'Подробнее: /fullinfo{}'.decode('utf-8').format(movie_id)
+        )
+
+        return template.render({
+            'title': film.title,
+            'description': ann_o,
+            'sign_genre': settings.SIGN_GENRE,
+            'genres': ', '.join(
+                [a.get().name.encode('utf-8') for a in film.genres]
+            ).decode('utf-8'),
+            'sign_actor': settings.SIGN_ACTOR,
+            'actors': ', '.join(
+                [a.name.encode('utf-8') for a in actors]
+            ).decode('utf-8'),
+
+            'directors': ', '.join(
+                [a.name.encode('utf-8') for a in film.directors]
+            ).decode('utf-8'),
+            'sign_producer': settings.SIGN_PRODUCER,
+        }), markup, movie_poster
 
 
 def display_movie_info_api(movie_id, telegram_user_id, next_url='/seance'):
