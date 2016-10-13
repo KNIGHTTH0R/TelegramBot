@@ -59,6 +59,7 @@ BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 TEMPLATES_DIR = os.path.join(BASE_DIR, 'templates')
 
 URL_CINEMAS = 'https://kinohod.ru/api/rest/partner/v1/cinemas/?apikey={}'
+URL_SOON_MOVIES = 'https://kinohod.ru/api/rest/partner/v1/movies/?filter=soon&apikey={}'
 URL_RUNNING_MOVIES = 'https://api.kinohod.ru/api/data/2/{}/running.json.gz'
 URL_MOVIES_INFO = 'https://kinohod.ru/api/rest/partner/v1/movies/{}?apikey={}'
 URL_SEANCES = 'https://kinohod.ru/api/rest/partner/v1/movies/{}/schedules?apikey={}&rangeStart={}&limit={}'
@@ -100,6 +101,8 @@ SIGN_DOWN_FINGER = '\xF0\x9F\x91\x87'.decode('utf-8')
 SIGN_FINGER = '\xF0\x9F\x91\x8D'.decode('utf-8')
 SIGN_GENRE = '\xF0\x9F\x8E\xAD'.decode('utf-8')
 SIGN_PRODUCER = '\xF0\x9F\x8E\xAC'.decode('utf-8')
+SIGN_ALARM = '\xE2\x8F\xB0'.decode('utf-8')
+SIGN_CHILD_AGE = '\xF0\x9F\x9A\xB8'.decode('utf-8')
 
 
 SIGN_RUB = 'P'
@@ -120,7 +123,7 @@ ON_TOMORROW = 'Завтра'
 ON_A_TOMORROW = 'Послезавтра'
 ON_TODAY = 'Сегодня'
 NO_FILM_SCHEDULE ='_{}_ фильм *{}* не показывает *{}*, можете выбрать другой день или вообще все другое'.decode('utf-8')
-FILM_NO_CINEMA = 'Увы, но фильм больше нигде не показывается {}'.decode('utf-8').format(SIGN_SCREAMING)
+FILM_NO_CINEMA = 'Увы, но фильм сегодня нигде не показывается {}'.decode('utf-8').format(SIGN_SCREAMING)
 FILM_NO_PLACE = 'Увы, но фильма в прокате уже нет {}'.decode('utf-8').format(SIGN_SCREAMING)
 NO_FILM_SEANCE = 'Увы, но сеансов на выбранный фильм нет {}'.decode('utf-8').format(SIGN_SCREAMING)
 NO_SEANCE = 'Нет сеансов на выбранный фильм в этом кинотеатре {}'.decode('utf-8').format(SIGN_SCREAMING)
