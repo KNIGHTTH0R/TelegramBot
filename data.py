@@ -20,6 +20,13 @@ def get_data(state):
             data = json.loads(stream.read())
         out_data['film'] = {film['title']: film for film in data}
 
+        url = settings.URL_SOON_MOVIES.format(settings.KINOHOD_API_KEY)
+        with contextlib.closing(urllib2.urlopen(url)) as jf:
+            data_soon = json.loads(jf.read())
+
+        for f in data_soon:
+            out_data['film'][f['title']] = f
+
     def get_place_data():
         url_cinema = settings.URL_CINEMAS.format(settings.KINOHOD_API_KEY)
         with contextlib.closing(urllib2.urlopen(url_cinema)) as jf:
