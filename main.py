@@ -185,7 +185,7 @@ class CronFilmTableUpdateView(webapp2.RedirectHandler):
 
 
 app = webapp2.WSGIApplication([
-    # ('/update_film', UpdateBFilmView),
+    ('/update_film', UpdateBFilmView),
     # ('/update_cinema', UpdateBCinemaView),
     # ('/delete_all_cinema_docs', DeleteAllSearchCinemaDocumentsView),
     # ('/delete_all_film_docs', DeleteAllSearchFilmDocumentsView),
