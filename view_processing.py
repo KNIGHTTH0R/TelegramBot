@@ -6,7 +6,6 @@ from screen.cinema_seances import detect_cinema_seances
 from screen.movie_info import display_movie_info
 from screen.running_movies import get_cinema_movies
 from screen.cinemas import cinemas_from_data
-from model.film import Film
 from processing.parser import Parser
 
 from commands import send_reply
@@ -42,8 +41,22 @@ def display_afisha(request, bot, chat_id, tuid):
         flag = False
 
         category = getattr(data, category_name)
+
         if category:
-            category = filter(lambda f: len(f.cinemas) > 0, category)
+            now = datetime.now()
+            new_category = []
+            for f in category:
+                if len(f.cinemas) > 0:
+                    new_category.append(f)
+
+                elif (f.premiereDateRussia and
+                      f.premiereDateRussia > now and f.premiereDateRussia):
+                    new_category.append(f)
+
+                elif f.premiereDateWorld and f.premiereDateWorld > now:
+                    new_category.append(f)
+
+            category = new_category
 
         if category and data.place:
 
