@@ -30,11 +30,13 @@ def cinemas_where_film(film, number_to_display=None,
     return cinemas
 
 
-def get_cinemas_where_film(film, number_to_display=settings.CINEMAS_TO_DISPLAY):
+def get_cinemas_where_film(film,
+                           number_to_display=settings.CINEMAS_TO_DISPLAY):
 
     cinemas = cinemas_where_film(film, number_to_display=number_to_display)
 
     if len(cinemas) < 1:
+        # do some
         return settings.FILM_NO_CINEMA, None
 
     template = settings.JINJA_ENVIRONMENT.get_template(
