@@ -121,15 +121,12 @@ def cinemas_from_data(data, movie_id=None):
     link = '/c{}m{}' if movie_id else '/show{}'
 
     for p in data:
-        link = (link.format(p.kinohod_id, movie_id)
-                if movie_id else link.format(p.kinohod_id))
+        l = (link.format(p.kinohod_id, movie_id)
+             if movie_id else link.format(p.kinohod_id))
 
         cinemas.append(
             settings.RowCinema(
-                p.shortTitle,
-                p.address,
-                p.mall,
-                link
+                p.shortTitle, p.address, p.mall, l
             )
         )
 

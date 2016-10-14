@@ -10,6 +10,7 @@ from google.appengine.api import mail
 from google.appengine.ext import deferred
 
 from commands import films_category
+from commands import display_nearest
 from commands import cinema_category
 # from commands import base_category
 
@@ -53,7 +54,8 @@ def send_mail_story(tuid, bot, chat_id, text, cmd, profile):
         bot.sendMessage(chat_id, settings.NEED_CONTACT, reply_markup=markup)
 
 
-class Msg(namedtuple('Msg', ['msg', 'texts', 'markup', 'func', 'style'])):
+class Msg(namedtuple('Msg', ['msg', 'texts', 'markup', 'func',
+                             'style'])):
     __slots__ = ()
 
     def __new__(cls, *args, **kwargs):
@@ -150,10 +152,16 @@ support_dict = {
     ),
 
     settings.QR_CODE_PROBLEM: Msg(
-        settings.QR_SPECIAL, [settings.YES_QR, settings.NO_QR], None
+        settings.QR_SPECIAL,
+        [settings.YES_QR, settings.NO_QR],
+        None
     ),
 
-    settings.NO_QR: Msg(settings.QR_SPECIAL_VALID, None, start_markup()),
+    settings.NO_QR: Msg(
+        settings.QR_SPECIAL_VALID,
+        None,
+        start_markup()
+    ),
 
     settings.ANOTHER: Msg(
         settings.WHAT_A_PROBLEM,
@@ -192,20 +200,63 @@ support_dict = {
     ),
 
     settings.NO_MAIL_SENDED: Msg(
-        settings.NEED_CONTACT_MAIL, None, start_markup()
+        settings.NEED_CONTACT_MAIL,
+        None,
+        start_markup()
     ),
 
-    settings.NO_AGAIN: Msg(settings.NEED_CONTACT_MAIL, None, start_markup()),
+    settings.NO_AGAIN: Msg(
+        settings.NEED_CONTACT_MAIL,
+        None,
+        start_markup()
+    ),
 
-    settings.NO_IT_ISNT: Msg(settings.HOW_CAN_HELP, None, start_markup()),
-    settings.MAIL_IN_SPAM: Msg(settings.HOW_CAN_HELP, None, start_markup()),
-    settings.MAIL_SENDED: Msg(settings.HOW_CAN_HELP, None, start_markup()),
-    settings.NO_CASH_INVALID: Msg(settings.HOW_CAN_HELP, None, start_markup()),
-    settings.YES_AGAIN: Msg(settings.HOW_CAN_HELP, None, start_markup()),
-    settings.YES_QR: Msg(settings.HOW_CAN_HELP, None, start_markup()),
-    settings.YES_SERT_MAIL: Msg(settings.HOW_CAN_HELP, None, start_markup()),
+    settings.NO_IT_ISNT: Msg(
+        settings.SUPPORT_THANKS,
+        None,
+        start_markup()
+    ),
+
+    settings.MAIL_IN_SPAM: Msg(
+        settings.SUPPORT_THANKS,
+        None,
+        start_markup()
+    ),
+
+    settings.MAIL_SENDED: Msg(
+        settings.SUPPORT_THANKS,
+        None,
+        start_markup()
+    ),
+
+    settings.NO_CASH_INVALID: Msg(
+        settings.SUPPORT_THANKS,
+        None,
+        start_markup()
+    ),
+
+    settings.YES_AGAIN: Msg(
+        settings.SUPPORT_THANKS,
+        None,
+        start_markup()
+    ),
+
+    settings.YES_QR: Msg(
+        settings.SUPPORT_THANKS,
+        None,
+        start_markup()
+    ),
+
+    settings.YES_SERT_MAIL: Msg(
+        settings.SUPPORT_THANKS,
+        None,
+        start_markup()
+    ),
+
     settings.ONLINE_ISNT_VALID: Msg(
-        settings.CANNOT_HELP, None, start_markup()
+        settings.SUPPORT_THANKS,
+        None,
+        start_markup()
     ),
 }
 

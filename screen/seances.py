@@ -5,7 +5,7 @@ import urllib2
 import json
 
 from telepot.namedtuple import InlineKeyboardMarkup
-
+from datetime import datetime
 from model.base import get_model
 from model.base import UserProfile
 from model.film import Film
@@ -40,7 +40,8 @@ def get_data(url):
         return None
 
 
-def get_seances(chat_id, movie_id, number_of_seances):
+def get_seances(chat_id, movie_id, number_of_seances,
+                date=datetime.now().strftime('%d%m%Y')):
 
     u = get_model(UserProfile, chat_id)
 
@@ -82,7 +83,7 @@ def get_seances(chat_id, movie_id, number_of_seances):
                 settings.RowDist(
                     settings.uncd(info['shortTitle']),
                     info['distance'],
-                    '(/c{}m{})'.format(cinema_id, movie_id)
+                    '/c{}m{}'.format(cinema_id, movie_id)
                 )
             )
 
@@ -129,9 +130,11 @@ def get_seances(chat_id, movie_id, number_of_seances):
                 continue
 
             seances.append(
-                settings.Row(settings.uncd(cinema_json['shortTitle']),
-                             '(/c{}m{})'.format(cinema_id,
-                                                info['movie']['id']))
+                settings.RowCinema(
+                    settings.uncd(cinema_json['shortTitle']),
+                    cinema_json.get('address'),
+                    cinema_json.get('mall'),
+                    '/c{}m{}'.format(cinema_id, info['movie']['id']))
             )
 
         empty_data(html_data=html_data)
@@ -139,15 +142,18 @@ def get_seances(chat_id, movie_id, number_of_seances):
         template = settings.JINJA_ENVIRONMENT.get_template('seances.md')
 
     return template.render({
+        'date': datetime.strptime(date, '%d%m%Y').strftime('%d.%m.%Y'),
+        'sign_point': settings.SIGN_POINT,
         'sign_tip': settings.SIGN_TIP,
         'seances': seances
     }), mark_up
 
 
-def display_seances_part(text, movie_id, number_of_seances):
+def display_seances_part(text, movie_id, number_of_seances,
+                         date=datetime.now().strftime('%d%m%Y')):
 
     url = settings.URL_FULL_SEANCES.format(
-        str(movie_id), settings.KINOHOD_API_KEY,
+        str(movie_id), settings.KINOHOD_API_KEY, date
     )
 
     seances = []
@@ -181,9 +187,12 @@ def display_seances_part(text, movie_id, number_of_seances):
                 cinema_json['subway_stations']['name'].find(text) > -1)):
 
             seances.append(
-                settings.Row(cinema_json['shortTitle'],
-                             '(/c{}m{})'.format(cinema_json['id'],
-                                                info['movie']['id']))
+                settings.RowCinema(
+                    cinema_json['shortTitle'],
+                    cinema_json.get('address'),
+                    cinema_json.get('mall'),
+                    '/c{}m{}'.format(cinema_json['id'],
+                                       info['movie']['id']))
             )
 
     empty_data(html_data=html_data)
@@ -206,6 +215,61 @@ def display_seances_part(text, movie_id, number_of_seances):
     template = settings.JINJA_ENVIRONMENT.get_template('seances.md')
 
     return template.render({
+        'date': datetime.strptime(date, '%d%m%Y').strftime('%d.%m.%Y'),
+        'sign_point': settings.SIGN_POINT,
+        'sign_tip': settings.SIGN_TIP,
+        'seances': seances
+    })
+
+
+def display_seances_all(movie_id, number_of_seances,
+                        date=datetime.now().strftime('%d%m%Y')):
+
+    url = settings.URL_FULL_SEANCES.format(
+        str(movie_id), settings.KINOHOD_API_KEY, date
+    )
+
+    seances = []
+
+    html_data = get_data(url)
+
+    if not html_data:
+        return settings.DONT_UNDERSTAND
+
+    for info in html_data:
+
+        cinema_json = info.get('cinema')
+
+        seances.append(
+            settings.RowCinema(
+                cinema_json['shortTitle'],
+                cinema_json.get('address'),
+                cinema_json.get('mall'),
+                '/c{}m{}d{}'.format(cinema_json['id'],
+                                    info['movie']['id'], date))
+        )
+
+    empty_data(html_data=html_data)
+    if len(seances) < 1:
+        return settings.NO_SEANCES_IN_DAY
+
+    correct, n = False, settings.SEANCES_TO_DISPLAY
+    while not correct:
+        if len(seances) > number_of_seances:
+            n = settings.SEANCES_TO_DISPLAY
+            seances = seances[number_of_seances - n: number_of_seances]
+            correct = True
+        elif len(seances) > (number_of_seances - n):
+            seances = seances[number_of_seances - n:]
+            correct = True
+        else:
+            number_of_seances = n
+
+    template = settings.JINJA_ENVIRONMENT.get_template('seances.md')
+
+    return template.render({
+        'date': datetime.strptime(date, '%d%m%Y').strftime('%d.%m.%Y'),
+        'sign_point': settings.SIGN_POINT,
         'sign_tip': settings.SIGN_TIP,
         'seances': seances
     })

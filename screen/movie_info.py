@@ -4,6 +4,7 @@ import contextlib
 import urllib2
 import json
 
+from datetime import datetime
 from collections import namedtuple
 
 from telepot.namedtuple import InlineKeyboardMarkup
@@ -34,6 +35,7 @@ def _get_movie_poster(poster_hash):
 
 def display_movie_info(movie_id, telegram_user_id,
                        next_url='/seance', full=False):
+    now = datetime.now()
 
     film = Film.get_by_id(str(movie_id))
     if not film:
@@ -53,22 +55,35 @@ def display_movie_info(movie_id, telegram_user_id,
         shorten_url = botan.shorten_url(trailer_url, settings.BOTAN_TOKEN,
                                         telegram_user_id)
 
-        markup = InlineKeyboardMarkup(inline_keyboard=[[
-            dict(text=settings.TREILER, url=shorten_url),
-            dict(text=settings.CHOOSE_SEANCE,
-                 callback_data=('{}{}num{}'.format(
-                     next_url, film.kinohod_id,
-                     settings.CINEMAS_TO_DISPLAY)
-                 )),
-        ]])
+        if film.premiereDateRussia and film.premiereDateRussia > now:
+            markup = InlineKeyboardMarkup(inline_keyboard=[[
+                dict(text=settings.TREILER, url=shorten_url),
+                dict(text=settings.NEAREST_SEANCES,
+                     callback_data='/future{}'.format(movie_id))
+            ]])
+        else:
+            markup = InlineKeyboardMarkup(inline_keyboard=[[
+                dict(text=settings.TREILER, url=shorten_url),
+                dict(text=settings.CHOOSE_SEANCE,
+                     callback_data=('{}{}num{}'.format(
+                         next_url, film.kinohod_id,
+                         settings.CINEMAS_TO_DISPLAY)
+                     )),
+            ]])
 
     else:
-        markup = InlineKeyboardMarkup(inline_keyboard=[[
-            dict(text=settings.CHOOSE_SEANCE,
-                 callback_data=('{}{}num{}'.format(
-                     next_url, film.kinohod_id, 20)
-                 ))
-        ]])
+        if film.premiereDateRussia and film.premiereDateRussia > now:
+            markup = InlineKeyboardMarkup(inline_keyboard=[[
+                dict(text=settings.NEAREST_SEANCES,
+                     callback_data='/future{}'.format(movie_id))
+            ]])
+        else:
+            markup = InlineKeyboardMarkup(inline_keyboard=[[
+                dict(text=settings.CHOOSE_SEANCE,
+                     callback_data=('{}{}num{}'.format(
+                         next_url, film.kinohod_id, 20)
+                     ))
+            ]])
 
     Annotation = namedtuple('Annotation', ['title', 'link'])
 

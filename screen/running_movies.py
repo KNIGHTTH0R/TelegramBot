@@ -86,7 +86,14 @@ def process_movies(data, number_of_movies, callback_url, date,
         # TODO: DO SOMETHING WITH THIS STUFF, DOUBLE DATA GETTER
         film = ndb.Key('Film', str(movie['id'])).get()
         # film = Film.get_by_id(movie['id'])
-        if film and len(film.cinemas) < 1:
+        two_weeks = timedelta(days=14)
+
+        if (film and
+            (len(film.cinemas) < 1 and not
+             ((film.premiereDateRussia and
+               (now < film.premiereDateRussia < (now + two_weeks))) or
+              (film.premiereDateWorld and
+               (now < film.premiereDateWorld < (now + two_weeks)))))):
             continue
         # END OF STUFF
 
@@ -132,6 +139,7 @@ def process_movies(data, number_of_movies, callback_url, date,
                                'sign_video': settings.SIGN_VIDEO,
                                'sign_tip': settings.SIGN_TIP,
                                'title': title,
+                               'sign_point': settings.SIGN_POINT,
                                'sign_calendar': settings.SIGN_CALENDAR,
                                'sign_newspaper': settings.SIGN_NEWSPAPER,
                                'sign_premier': settings.SIGN_PREMIER})
@@ -139,6 +147,7 @@ def process_movies(data, number_of_movies, callback_url, date,
         template = settings.JINJA_ENVIRONMENT.get_template('running_movies.md')
         msg = template.render({'videos': videos, 'premiers': premiers,
                                'sign_video': settings.SIGN_VIDEO,
+                               'sign_point': settings.SIGN_POINT,
                                'title': title,
                                'sign_tip': settings.SIGN_TIP,
                                'sign_premier': settings.SIGN_PREMIER})
@@ -239,8 +248,11 @@ def get_cinema_movies(cinema_id, number_of_movies, date, title=None):
         settings.KINOHOD_API_KEY,
     )
 
-    with contextlib.closing(urllib2.urlopen(url)) as jf:
-        data = json.loads(jf.read())
+    try:
+        with contextlib.closing(urllib2.urlopen(url)) as jf:
+            data = json.loads(jf.read())
+    except Exception:
+        return settings.DONT_UNDERSTAND
 
     data = [d['movie'] for d in data]
     callback_url = '/show' + str(cinema_id) + 'v{}' + 'in{}'

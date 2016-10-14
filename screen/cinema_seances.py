@@ -4,7 +4,7 @@ import contextlib
 import urllib2
 import json
 
-from collections import namedtuple
+from collections import namedtuple, OrderedDict
 from datetime import timedelta, datetime
 
 from telepot.namedtuple import InlineKeyboardMarkup
@@ -30,9 +30,9 @@ def _calculate_is_onsale(t_str):
 
 def _construct_markup(cinema_id, movie_id, day):
 
-    day_id_m = {settings.ON_TODAY: 0,
-                settings.ON_TOMORROW: 1,
-                settings.ON_A_TOMORROW: 2}
+    day_id_m = OrderedDict({settings.ON_TODAY: 0,
+                            settings.ON_TOMORROW: 1,
+                            settings.ON_A_TOMORROW: 2})
 
     def display_other(d):
         days_reverse = {v: k for k, v in day_id_m.iteritems()}
@@ -118,7 +118,7 @@ def detect_cinema_seances(cinema_id, movie_id, day):
 
         seances = []
         for s in info['schedules']:
-            m_p = s['minPrice'] if s['minPrice'] else settings.DO_NOT_KNOW
+            m_p = s['minPrice'] if s['minPrice'] else None
 
             s_f = None
             if s['formatName'] and len(s['formatName']) < 10:
