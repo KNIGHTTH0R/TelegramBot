@@ -35,8 +35,9 @@ class Genre(ndb.Model):
         return Film.query().filter(Film.genres == self.key)
 
     def add_film(self, film):
-        film.genres.append(self.key)
-        film.put()
+        if self.key not in film.genres:
+            film.genres.append(self.key)
+            film.put()
 
 
 class Source(ndb.Model):
@@ -149,7 +150,6 @@ def set_film_model(f, schedules):
     trailers = f.get('trailers')
 
     trailer_keys = []
-    _upd_genres = []
 
     def _process_rbg_name(_list, cls):
         if _list and isinstance(_list, list):
@@ -193,18 +193,21 @@ def set_film_model(f, schedules):
             premiereDateRussia = None
 
     genres = []
-    if _genres and isinstance(_genres, dict):
+    if _genres:
         for g in _genres:
             if isinstance(g, dict):
-                genres.append(
-                    set_model(
-                        Genre, pk=g.get('id'),
-                        name=g.get('name'),
-                        kinohod_id=g.get('id')
-                    ).key
+
+                genre_id = g.get('id')
+                if genre_id is None:
+                    continue
+
+                g = set_model(
+                    Genre,
+                    pk=genre_id, name=g.get('name'), kinohod_id=genre_id
                 )
 
-                _upd_genres.append(Genre.get_by_id(g.get('id')))
+                genres.append(g.key)
+                # genres.append(g.key)
 
     if trailers and isinstance(trailers, list):
         for trailer in trailers:
@@ -213,19 +216,19 @@ def set_film_model(f, schedules):
             videos = trailer.get('videos')
 
             if not videos:
-                videos = trailer.get('mobile_mp4')
+                videos = [trailer.get('mobile_mp4')]
 
             o = Trailer(
                 source=Source(
                     filename=source.get('filename'),
-                    duration=source.get('duration'),
+                    duration=_t(source, 'duration', float),
                     contentType=source.get('contentType')
                 ) if source else None,
 
                 videos=[
                     Video(
                         filename=v.get('filename'),
-                        duration=v.get('duration'),
+                        duration=_t(v, 'duration', float),
                         contentType=v.get('contentType')
                     ) for v in videos
                 ] if videos else None,
@@ -249,7 +252,7 @@ def set_film_model(f, schedules):
                 if c_o:
                     cinemas.append(c_o.key)
 
-    set_model(
+    curr_f = set_model(
         cls=Film,
 
         # it is only kinohod_id
@@ -263,15 +266,15 @@ def set_film_model(f, schedules):
             name=poster_landscape.get('name')
         ) if poster_landscape else None,
 
-        ageRestriction = f.get('ageRestriction'),
+        ageRestriction=f.get('ageRestriction'),
         annotationFull=f.get('annotationFull'),
 
         producers=[
             Producer(name=p.get('name'), kinohod_id=p.get('id'))
-            for p in producers
+            for p in producers if isinstance(p, dict)
         ] if producers else None,
 
-        genres=genres if len(genres) else None,
+        genres=genres,
 
         weight=_t(f, 'weight', int),
         kinohod_id=_t(f, 'id', int),
@@ -288,7 +291,9 @@ def set_film_model(f, schedules):
         productionYear=_t(f, 'productionYear', int),
 
         premiereDateWorld=datetime.strptime(
-            premiere_date_world, '%Y-%m-%d'
+            (premiere_date_world.split('T')[0]
+             if 'T' in premiere_date_world else premiere_date_world),
+            '%Y-%m-%d'
         ) if premiere_date_world else None,
 
         duration=_t(f, 'duration', int),
@@ -316,7 +321,7 @@ def set_film_model(f, schedules):
 
         companies=[
             Company(name=c.get('name'), kinohod_id=c.get('id'))
-            for c in companies
+            for c in companies if isinstance(c, dict)
         ] if companies else None,
 
         premiereDateRussia=premiereDateRussia,
@@ -326,7 +331,4 @@ def set_film_model(f, schedules):
         cinemas=cinemas
     )
 
-    curr_f = Film.get_by_id(f['id'])
-    for g in _upd_genres:
-        g.add_film(curr_f)
-        g.put()
+    return curr_f
