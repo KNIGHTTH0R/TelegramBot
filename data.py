@@ -5,6 +5,7 @@ import urllib2
 import json
 import gzip
 
+from itertools import chain
 from StringIO import StringIO
 
 import settings
@@ -45,6 +46,22 @@ def get_data(state):
     for func in data_scenario[state]:
         func()
     return out_data['film'], out_data['place']
+
+
+def get_genres(genre_id):
+    # TODO, I KNOW THAT IT IS A STUPID IDEA TO GET OBJECT INSTED OF JSON,
+    # TODO: BUT IF YOU WANT
+
+    url = settings.URL_GENRES.format(genre_id, settings.KINOHOD_API_KEY)
+    url_s = settings.URL_GENRES_SOON.format(genre_id, settings.KINOHOD_API_KEY)
+
+    with contextlib.closing(urllib2.urlopen(url)) as jf:
+        genres = json.loads(jf.read())
+
+    with contextlib.closing(urllib2.urlopen(url_s)) as jf:
+        genres_soon = json.loads(jf.read())
+
+    return chain(genres, genres_soon)
 
 
 def get_schedule(film_id):
