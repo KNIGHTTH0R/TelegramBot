@@ -49,8 +49,7 @@ def display_afisha(request, bot, chat_id, tuid):
                 if len(f.cinemas) > 0:
                     new_category.append(f)
 
-                elif (f.premiereDateRussia and
-                      f.premiereDateRussia > now and f.premiereDateRussia):
+                elif f.premiereDateRussia and f.premiereDateRussia > now:
                     new_category.append(f)
 
                 elif f.premiereDateWorld and f.premiereDateWorld > now:
@@ -59,7 +58,6 @@ def display_afisha(request, bot, chat_id, tuid):
             category = new_category
 
         if category and data.place:
-
             time = data.when if data.when else settings.TODAY
             for p in data.place:
                 for w in category:
@@ -85,6 +83,7 @@ def display_afisha(request, bot, chat_id, tuid):
                            datetime.now().strftime('%d%m%Y'),
                            data.place[0].shortTitle)
             return True
+        return False
 
     bot.sendChatAction(chat_id, action='typing')
     parser = Parser(request=request, state='base')
@@ -98,53 +97,3 @@ def display_afisha(request, bot, chat_id, tuid):
         if film_iteraction(c, parser.data):
             return True
     return False
-
-
-# def display_films(request, bot, chat_id, tuid):
-#
-#     def film_iteraction(category_name, data):
-#         category = getattr(data, category_name)
-#         if category:
-#             process_what(bot, chat_id, tuid, category, next_url='/location')
-#             return True
-#
-#     bot.sendChatAction(chat_id, action='typing')
-#     parser = Parser(request=request, state='film')
-#     parser.parse()
-#
-#     if film_iteraction('what', parser.data):
-#         return True
-#
-#     parser.parser_special()
-#     for c in ['genre', 'actors']:
-#         if film_iteraction(c, parser.data):
-#             return True
-#     return False
-
-#
-# def display_cinemas(request, bot, chat_id, tuid):
-#
-#     parser = Parser(request=request, state='cinema')
-#     parser.parse()
-#
-#     bot.sendChatAction(chat_id, action='typing')
-#     if not parser.data.place:
-#         bot.sendMessage(chat_id, settings.CINEMA_NOT_FOUND)
-#     else:
-#         for p in parser.data.place:
-#             if not p:
-#                 bot.sendMessage(chat_id, settings.DONT_UNDERSTAND)
-#                 return True
-#
-#             bot.sendMessage(
-#                 chat_id,
-#                 settings.CINEMA_NAME.format(
-#                     p.shortTitle.encode('utf-8')
-#                 ),
-#                 parse_mode='Markdown'
-#             )
-#
-#             date = datetime.now().strftime('%d%m%Y')
-#             send_reply(bot, chat_id, get_cinema_movies,
-#                        p.kinohod_id, settings.CINEMA_TO_SHOW, date)
-#     return True
