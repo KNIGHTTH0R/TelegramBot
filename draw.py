@@ -128,7 +128,7 @@ def draw_cinemahall(schedule_id):
                       fill=FILL_BLACK)
 
             if high_price > low_price:
-                high_str = '{} {}'.format(low_price, SIGN_RUB)
+                high_str = '{} {}'.format(high_price, SIGN_RUB)
                 draw.text((x_base_orange + seat_width,
                            picture_height - int(1. * seat_height)),
                           high_str,

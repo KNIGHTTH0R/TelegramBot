@@ -5,6 +5,7 @@ import urllib2
 import json
 import gzip
 
+from datetime import datetime
 from itertools import chain
 from StringIO import StringIO
 
@@ -64,10 +65,10 @@ def get_genres(genre_id):
     return chain(genres, genres_soon)
 
 
-def get_schedule(film_id):
+def get_schedule(film_id, date=datetime.now().strftime('%d%m%Y')):
 
     url = settings.URL_FULL_SEANCES.format(
-        str(film_id), settings.KINOHOD_API_KEY
+        str(film_id), settings.KINOHOD_API_KEY, date
     )
 
     try:
