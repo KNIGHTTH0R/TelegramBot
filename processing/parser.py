@@ -1,14 +1,16 @@
 # coding: utf-8
 
 import re
+import itertools
 
 from datetime import datetime, timedelta
 
 from mapping import stop_words, when_nearest, when_week, when_month
 from maching import damerau_levenshtein_distance
 from model.search import ModelSearch
-from model.film import Genre
+from model.film import Genre, Film, set_film_model
 from parse_data import Data
+from data import get_genres, get_schedule
 
 import settings
 
@@ -54,21 +56,57 @@ class Parser(object):
                 _consequences.append(act[0](*act[1:]))
         return filter(lambda x: x, _consequences)
 
-    def parser_special(self):
+    def parser_special(self, is_film_object=True):
         """
-        tasks are already asynchronous
-        :return:
+        :type is_film_object: regularize output
+        if True will return Film object else json with films
+        :return: None, put all films in data.genre
         """
 
-        self.__parse_genres()
+        # self.__parse_genres()
+        self.__parse_genres_api(is_film_object)
         self.__parse_actor_producer()
+
+    def __parse_genres_api(self, is_film_object):
+        genres = Genre.query().fetch()
+
+        ids_inside = []
+        for t in self.splitted:
+            for g in genres:
+                g_name = MORPH.parse(g.name)[0].normal_form
+                if damerau_levenshtein_distance(de_uncd(g_name), t) < 3:
+                    if not self.data.genre:
+                        self.data.genre = []
+
+                    if is_film_object:
+                        films = get_genres(g.kinohod_id)
+                        for f in films:
+                            film_id = f.get('id')
+                            if not film_id or film_id in ids_inside:
+                                continue
+
+                            o = Film.get_by_id(film_id)
+
+                            if not o:
+                                schedules = get_schedule(film_id)
+                                o = set_film_model(f, schedules)
+
+                            ids_inside.append(film_id)
+                            self.data.genre.append(o)
+
+                    else:
+                        self.data.genre += get_genres(g.kinohod_id)
+
+                    break  # breaks only one loop
 
     def __parse_genres(self):
         genres = Genre.query().fetch()
 
         for t in self.splitted:
             for g in genres:
-                if damerau_levenshtein_distance(de_uncd(g.name), t) < 3:
+                g_name = MORPH.parse(g.name)[0].normal_form
+                if damerau_levenshtein_distance(de_uncd(g_name), t) < 3:
+
                     for g in g.films:
 
                         if not self.data.genre:
