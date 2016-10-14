@@ -1,6 +1,7 @@
 # coding: utf8
 
-from datetime import datetime
+from datetime import datetime, timedelta
+from collections import namedtuple
 
 from screen.cinema_seances import detect_cinema_seances
 from screen.movie_info import display_movie_info
@@ -41,6 +42,7 @@ def display_afisha(request, bot, chat_id, tuid):
         flag = False
 
         category = getattr(data, category_name)
+        two_weeks = timedelta(days=14)
 
         if category:
             now = datetime.now()
@@ -49,21 +51,42 @@ def display_afisha(request, bot, chat_id, tuid):
                 if len(f.cinemas) > 0:
                     new_category.append(f)
 
-                elif f.premiereDateRussia and f.premiereDateRussia > now:
+                elif (f.premiereDateRussia and
+                      now < f.premiereDateRussia < (now + two_weeks)):
                     new_category.append(f)
 
-                elif f.premiereDateWorld and f.premiereDateWorld > now:
+                elif (f.premiereDateWorld and
+                      now < f.premiereDateWorld < (now + two_weeks)):
                     new_category.append(f)
 
             category = new_category
 
         if category and data.place:
-            time = data.when if data.when else settings.TODAY
+
+            no_display = {}
+
+            now = datetime.now()
+            time = data.when if data.when else now
+
             for p in data.place:
                 for w in category:
+
+                    if w.premiereDateRussia and w.premiereDateRussia > time:
+                        continue
+
+                    if p.key not in w.cinemas and w.premiereDateRussia < now:
+                        if p.shortTitle not in no_display:
+                            no_display[p.shortTitle] = [(w, p)]
+                        else:
+                            no_display[p.shortTitle].append((w, p))
+                        continue
+
                     if send_reply(bot, chat_id, detect_cinema_seances,
                                   int(p.kinohod_id), int(w.kinohod_id), time):
                         flag = True
+
+            display_film_no_any_seances(bot, chat_id, no_display)
+
             if flag:
                 return True
             else:
@@ -97,3 +120,27 @@ def display_afisha(request, bot, chat_id, tuid):
         if film_iteraction(c, parser.data):
             return True
     return False
+
+
+RowDisplay = namedtuple('RowDisplay', ['title', 'films'])
+
+
+def display_film_no_any_seances(bot, chat_id, no_display):
+
+    cinemas = []
+    for short_name, l in no_display.iteritems():
+        cinemas.append(
+            RowDisplay(
+                short_name,
+                [settings.Row(t[0].title, t[0].kinohod_id) for t in l]
+            )
+        )
+
+    if cinemas:
+        bot.sendMessage(
+            chat_id,
+            settings.JINJA_ENVIRONMENT.get_template(
+                'cinema_film_no_display.md'
+            ).render({'cinemas': cinemas, 'sign_point': settings.SIGN_POINT}),
+            parse_mode='Markdown'
+        )
