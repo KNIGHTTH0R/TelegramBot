@@ -65,7 +65,7 @@ URL_SOON_MOVIES = 'https://kinohod.ru/api/rest/partner/v1/movies/?filter=soon&ap
 URL_RUNNING_MOVIES = 'https://api.kinohod.ru/api/data/2/{}/running.json.gz'
 URL_MOVIES_INFO = 'https://kinohod.ru/api/rest/partner/v1/movies/{}?apikey={}'
 URL_SEANCES = 'https://kinohod.ru/api/rest/partner/v1/movies/{}/schedules?apikey={}&rangeStart={}&limit={}'
-URL_FULL_SEANCES = 'https://kinohod.ru/api/rest/partner/v1/movies/{}/schedules?apikey={}'
+URL_FULL_SEANCES = 'https://kinohod.ru/api/rest/partner/v1/movies/{}/schedules?apikey={}&date={}'
 URL_CINEMA_SEANCES = 'https://kinohod.ru/api/rest/partner/v1/cinemas/{}/schedules?apikey={}&limit=10&date={}'
 URL_CINEMA_MOVIE = 'https://kinohod.ru/api/rest/partner/v1/cinemas/{}/schedules?apikey={}'
 URL_CINEMA_MOVIE_DATE = 'https://kinohod.ru/api/rest/partner/v1/cinemas/{}/schedules?date={}&apikey={}'
@@ -105,7 +105,7 @@ SIGN_GENRE = '\xF0\x9F\x8E\xAD'.decode('utf-8')
 SIGN_PRODUCER = '\xF0\x9F\x8E\xAC'.decode('utf-8')
 SIGN_ALARM = '\xE2\x8F\xB0'.decode('utf-8')
 SIGN_CHILD_AGE = '\xF0\x9F\x9A\xB8'.decode('utf-8')
-
+SIGN_POINT = '\xE2\x96\xAA'.decode('utf-8')
 
 SIGN_RUB = 'P'
 FIRST_THREE = 'Первые три'
@@ -125,10 +125,13 @@ ON_TOMORROW = 'Завтра'
 ON_A_TOMORROW = 'Послезавтра'
 ON_TODAY = 'Сегодня'
 NO_FILM_SCHEDULE ='_{}_ фильм *{}* не показывает *{}*, можете выбрать другой день или вообще все другое'.decode('utf-8')
+NO_FILM_IN_CINEMA = 'Увы, но фильм *{}* /info{} в кинотеатре _{}_ не показывают'.decode('utf-8')
 FILM_NO_CINEMA = 'Увы, но фильм сегодня нигде не показывается {}'.decode('utf-8').format(SIGN_SCREAMING)
 FILM_NO_PLACE = 'Увы, но фильма в прокате уже нет {}'.decode('utf-8').format(SIGN_SCREAMING)
 NO_FILM_SEANCE = 'Увы, но сеансов на выбранный фильм нет {}'.decode('utf-8').format(SIGN_SCREAMING)
 NO_SEANCE = 'Нет сеансов на выбранный фильм в этом кинотеатре {}'.decode('utf-8').format(SIGN_SCREAMING)
+NO_SEANCES_IN_DAY = 'Нет сеансов в рассматриваемый день'
+SUPPORT_THANKS = 'Спасибо за обращение, рады были Вам помочь!'
 SERVER_NOT_VALID = 'Увы, сервер недоступен.'
 BUY_TICKET = 'Купить билеты'
 SHARE_LOCATION = 'Мое местоположение'
@@ -154,7 +157,7 @@ YES_SERT_MAIL = 'Письмо все таки пришло'
 NO_SERT_MAIL = 'Письма так и нет'
 IF_TERMINAL_NOT_WORKING = 'Если терминал не работает, обратитесь в кассу, предъявите письмо от Кинохода. Кассир выдаст Вам билеты.'
 
-HOW_CAN_HELP = 'Чем я могу Вам помочь?'
+HOW_CAN_HELP = 'Чем я могу Вам помочь? {}'.decode('utf-8').format(SIGN_DOWN_FINGER)
 CANNOT_HELP = 'Продажа билетов онлайн заканчивается за 30 минут до начала сеанса'
 SECRET_WORD = 'Наше секретное слово - Киноход. Приятного просмотра!'
 BACK = 'Назад'
@@ -210,11 +213,11 @@ FILMS = 'Фильмы'
 FILM_INFO = 'Вам под силу написать название фильма, можно его часть или же жанр - мы очень постараемся вам угодить {}'.decode('utf-8').format(SIGN_FINGER)
 CINEMA = 'Кинотеатры'
 CINEMA_NAME = '*Кинотеатр:* {}'
-CINEMA_INFO = 'Вам выпадает шанс ввести адресс или станцию метро или хоть что-нибудь, что говорит о месте кинотеатра, в который вы хотите'
+CINEMA_INFO = 'Вам выпадает шанс ввести адресс или станцию метро или хоть что-нибудь, что говорит о месте кинотеатра, в который вы хотите или нажмите на /nearest и мы найдем ближайшие'
 AFISHA = 'Афиша'
 AFISHA_INFO = 'В таком режиме вы можете писать произвольные высказывания на тему выдачи актуальных фильмов'
 
-NEAREST_SEANCES = 'ближайшие сеансы'
+NEAREST_SEANCES = 'Ближайшие сеансы'
 CINEMA_IS_NOT_SHOWN = 'Фильм не идет в рассматриваемом кинотеатре'
 ENTER_ORDER_NUMBER = 'Введите номер заказа'
 ENTER_ORDER_EMAIL = 'Введите email на который был выслан билет'
