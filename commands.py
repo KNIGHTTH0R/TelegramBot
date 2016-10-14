@@ -3,7 +3,7 @@
 import urllib
 import requests
 
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import botan
 
@@ -15,7 +15,7 @@ from draw import draw_cinemahall
 
 from screen.seances import display_seances_part
 from screen.cinemas import get_nearest_cinemas
-from screen.seances import get_seances
+from screen.seances import get_seances, display_seances_all
 from screen.help import get_help
 from screen.movie_info import display_movie_info
 from screen.cinema_seances import detect_cinema_seances
@@ -245,8 +245,14 @@ def display_seances_cinema(bot, payload, cmd, chat_id):
                    cinema_id, movie_id, d,
                    success=int(payload['callback_query']['id']))
     else:
-        movie_id = cmd[index_of_m + 1:]
-        d = settings.TODAY
+        if 'd' in cmd:
+            index_of_d = cmd.index('d')
+            movie_id, d = cmd[index_of_m + 1:index_of_d], cmd[index_of_d + 1:]
+            d = datetime.strptime(d, '%d%m%Y')
+        else:
+            movie_id = cmd[index_of_m + 1:]
+            d = settings.TODAY
+
         send_reply(bot, chat_id, detect_cinema_seances,
                    cinema_id, movie_id, d)
 
@@ -394,10 +400,13 @@ def display_info(bot, payload, cmd, chat_id, full=False,
 
     film = Film.get_by_id(str(movie_id))
     now = datetime.now()
+    two_weeks = timedelta(days=14)
 
     if (len(film.cinemas) < 1 and
-        not ((film.premiereDateRussia and film.premiereDateRussia > now) or
-             (film.premiereDateWorld and film.premiereDateWorld > now))):
+        not ((film.premiereDateRussia and
+              (now < film.premiereDateRussia < (now + two_weeks))) or
+             (film.premiereDateWorld and
+              (now < film.premiereDateWorld < (now + two_weeks))))):
         return
 
     message, mark_up, movie_poster = display_movie_info(
@@ -412,17 +421,29 @@ def display_info(bot, payload, cmd, chat_id, full=False,
         bot.sendChatAction(chat_id, 'upload_photo')
         bot.sendPhoto(chat_id, ('poster.jpg', movie_poster))
 
-    # if film.premiereDateRussia and film.premiereDateRussia > now:
-    #     mark_up = InlineKeyboardMarkup(inline_keyboard=[[
-    #         dict(text=settings.NEAREST_SEANCES,
-    #              callback_data='')
-    #              # callback_data=('{}{}num{}'.format(
-    #              #     next_url, film.kinohod_id, 20)
-    #              # ))
-    #     ]])
-
     bot.sendMessage(chat_id, message, reply_markup=mark_up,
                     parse_mode='Markdown')
+
+
+def display_future_seances(bot, payload, cmd, chat_id):
+    if 'callback_query' in payload:
+        if '/future' not in cmd:
+            bot.sendMessage(chat_id, settings.SERVER_NOT_VALID)
+            return
+
+        movie_id = cmd[len('/future'):]
+        film = Film.get_by_id(movie_id)
+
+        premier = film.premiereDateRussia
+        if not premier or not isinstance(premier, datetime):
+            bot.sendMessage(chat_id, settings.SERVER_NOT_VALID)
+            return
+
+        send_reply(
+            bot, chat_id, display_seances_all,
+            movie_id, settings.SEANCES_TO_DISPLAY, premier.strftime('%d%m%Y'),
+            success=int(payload['callback_query']['id'])
+        )
 
 
 def display_return(bot, payload, cmd, chat_id):
