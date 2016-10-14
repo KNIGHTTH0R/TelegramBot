@@ -56,9 +56,7 @@ def update_film_table(index_name='films'):
             film_id = f.get('id')
 
             schedules = get_schedule(film_id)
-            set_film_model(f, schedules)
-
-            o = Film.get_by_id(film_id)
+            o = set_film_model(f, schedules)
 
             ModelSearch.add_document(
                 ModelSearch.create_film_document(
@@ -188,9 +186,9 @@ app = webapp2.WSGIApplication([
     ('/update_film', UpdateBFilmView),
     # ('/update_cinema', UpdateBCinemaView),
     # ('/delete_all_cinema_docs', DeleteAllSearchCinemaDocumentsView),
-    # ('/delete_all_film_docs', DeleteAllSearchFilmDocumentsView),
+    ('/delete_all_film_docs', DeleteAllSearchFilmDocumentsView),
     # ('/search_cinema', CinemaSearchIndexView),
-    # ('/search_film', FilmSearchIndexView),
+    ('/search_film', FilmSearchIndexView),
     # ('/count_cinemas', CountCinemasView),
     # ('/test_genre_film', FilmGenreTestView),
     # ('/count_films', CountFilmsView),

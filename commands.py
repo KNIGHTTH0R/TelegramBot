@@ -393,7 +393,11 @@ def display_info(bot, payload, cmd, chat_id, full=False,
         return
 
     film = Film.get_by_id(str(movie_id))
-    if len(film.cinemas) < 1:
+    now = datetime.now()
+
+    if (len(film.cinemas) < 1 and
+        not ((film.premiereDateRussia and film.premiereDateRussia > now) or
+             (film.premiereDateWorld and film.premiereDateWorld > now))):
         return
 
     message, mark_up, movie_poster = display_movie_info(
@@ -407,6 +411,15 @@ def display_info(bot, payload, cmd, chat_id, full=False,
     if movie_poster:
         bot.sendChatAction(chat_id, 'upload_photo')
         bot.sendPhoto(chat_id, ('poster.jpg', movie_poster))
+
+    # if film.premiereDateRussia and film.premiereDateRussia > now:
+    #     mark_up = InlineKeyboardMarkup(inline_keyboard=[[
+    #         dict(text=settings.NEAREST_SEANCES,
+    #              callback_data='')
+    #              # callback_data=('{}{}num{}'.format(
+    #              #     next_url, film.kinohod_id, 20)
+    #              # ))
+    #     ]])
 
     bot.sendMessage(chat_id, message, reply_markup=mark_up,
                     parse_mode='Markdown')

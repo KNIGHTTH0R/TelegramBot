@@ -58,6 +58,8 @@ BASE_URL = 'https://api.telegram.org/bot{}/'.format(TELEGRAM_BOT_TOKEN)
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 TEMPLATES_DIR = os.path.join(BASE_DIR, 'templates')
 
+URL_GENRES = 'https://kinohod.ru/api/rest/partner/v1/movies/?genre={}&apikey={}'
+URL_GENRES_SOON = 'https://kinohod.ru/api/rest/partner/v1/movies/?genre={}&apikey={}&filter=soon'
 URL_CINEMAS = 'https://kinohod.ru/api/rest/partner/v1/cinemas/?apikey={}'
 URL_SOON_MOVIES = 'https://kinohod.ru/api/rest/partner/v1/movies/?filter=soon&apikey={}'
 URL_RUNNING_MOVIES = 'https://api.kinohod.ru/api/data/2/{}/running.json.gz'
@@ -212,7 +214,7 @@ CINEMA_INFO = 'Вам выпадает шанс ввести адресс или
 AFISHA = 'Афиша'
 AFISHA_INFO = 'В таком режиме вы можете писать произвольные высказывания на тему выдачи актуальных фильмов'
 
-
+NEAREST_SEANCES = 'ближайшие сеансы'
 CINEMA_IS_NOT_SHOWN = 'Фильм не идет в рассматриваемом кинотеатре'
 ENTER_ORDER_NUMBER = 'Введите номер заказа'
 ENTER_ORDER_EMAIL = 'Введите email на который был выслан билет'

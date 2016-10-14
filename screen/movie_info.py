@@ -39,7 +39,10 @@ def display_movie_info(movie_id, telegram_user_id,
     if not film:
         display_movie_info_api(movie_id, telegram_user_id, next_url='/seance')
 
-    movie_poster = _get_movie_poster(film.poster.name)
+    if film.poster:
+        movie_poster = _get_movie_poster(film.poster.name)
+    else:
+        movie_poster = None
 
     if film.trailers and len(film.trailers) > 0:
 
@@ -76,6 +79,7 @@ def display_movie_info(movie_id, telegram_user_id,
 
         actors = film.actors
         ann_o = Annotation(film.annotationFull, '')
+
         return template.render({
             'title': film.title,
             'description': ann_o,
@@ -93,11 +97,11 @@ def display_movie_info(movie_id, telegram_user_id,
             'sign_actor': settings.SIGN_ACTOR,
             'actors': ', '.join(
                 [a.name.encode('utf-8') for a in actors]
-            ).decode('utf-8'),
+            ).decode('utf-8') if actors else None,
 
             'directors': ', '.join(
                 [a.name.encode('utf-8') for a in film.directors]
-            ).decode('utf-8'),
+            ).decode('utf-8') if film.directors else None,
             'sign_producer': settings.SIGN_PRODUCER,
         }), markup, movie_poster
 
