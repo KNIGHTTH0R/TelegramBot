@@ -14,7 +14,7 @@ from google.appengine.ext import deferred
 from botan import track
 from commands import (display_nearest, display_seance, send_reply,
                       display_cinema, display_seances_cinema, callback_seance,
-                      display_schedule, display_movies,
+                      display_schedule, display_movies, display_future_seances,
                       display_info, display_help, display_movie_time_selection,
                       display_return, callback_return, display_location_seance,
                       callback_movie_time_selection, callback_seance_text,
@@ -52,6 +52,7 @@ def make_instruction():
         display_nearest: ['/nearest'],
         display_cinema: ['/show'],
         display_seance: ['/seance'],
+        display_future_seances: ['/future'],
         display_movies: ['/movies'],
         display_cinemas_where_film: ['/where_film'],
         display_movie_time_selection: ['/anytime'],
