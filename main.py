@@ -20,14 +20,15 @@ import json
 
 import webapp2
 
-from google.appengine.ext import deferred
+from google.appengine.ext import deferred, ndb
 
 from views import CommandReceiveView
 from model.search import ModelSearch, create_film_documents
 from data import get_data, get_schedule
 from processing.maching import damerau_levenshtein_distance
 from model.cinema import Cinema, set_cinema_model
-from model.film import Film, Genre, set_film_model
+from model.film import (Film, Genre, set_film_model,
+                        Trailer, Actor, Producer, Director)
 
 import settings
 
@@ -177,6 +178,20 @@ class FilmGenreTestView(webapp2.RedirectHandler):
         )
 
 
+def delete_all():
+    ndb.delete_multi(Trailer.query().fetch(keys_only=True))
+    ndb.delete_multi(Film.query().fetch(keys_only=True))
+    ndb.delete_multi(Actor.query().fetch(keys_only=True))
+    ndb.delete_multi(Genre.query().fetch(keys_only=True))
+    ndb.delete_multi(Producer.query().fetch(keys_only=True))
+    ndb.delete_multi(Director.query().fetch(keys_only=True))
+
+
+class ClassDeleteAllEntities(webapp2.RedirectHandler):
+    def get(self, *args, **kwargs):
+        deferred.defer(delete_all, )
+
+
 class CronFilmTableUpdateView(webapp2.RedirectHandler):
     def get(self, *args, **kwargs):
         deferred.defer(update_film_table, )
@@ -184,11 +199,12 @@ class CronFilmTableUpdateView(webapp2.RedirectHandler):
 
 app = webapp2.WSGIApplication([
     ('/update_film', UpdateBFilmView),
+    # ('/delete_entities', ClassDeleteAllEntities),
     # ('/update_cinema', UpdateBCinemaView),
     # ('/delete_all_cinema_docs', DeleteAllSearchCinemaDocumentsView),
-    ('/delete_all_film_docs', DeleteAllSearchFilmDocumentsView),
+    # ('/delete_all_film_docs', DeleteAllSearchFilmDocumentsView),
     # ('/search_cinema', CinemaSearchIndexView),
-    ('/search_film', FilmSearchIndexView),
+    # ('/search_film', FilmSearchIndexView),
     # ('/count_cinemas', CountCinemasView),
     # ('/test_genre_film', FilmGenreTestView),
     # ('/count_films', CountFilmsView),

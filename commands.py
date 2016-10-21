@@ -402,6 +402,9 @@ def display_info(bot, payload, cmd, chat_id, full=False,
     now = datetime.now()
     two_weeks = timedelta(days=14)
 
+    if not film:
+        return bot.sendMessage(chat_id, settings.DONT_UNDERSTAND)
+
     if (len(film.cinemas) < 1 and
         not ((film.premiereDateRussia and
               (now < film.premiereDateRussia < (now + two_weeks))) or
