@@ -213,7 +213,8 @@ class CommandReceiveView(webapp2.RequestHandler):
                         reply_markup=s[profile.state].markup())
                     track(tuid, 'miss understanding', 'invalid')
 
-        deferred.defer(set_model, UserProfile, chat_id, cmd=cmd)
+        deferred.defer(set_model, UserProfile, chat_id,
+                       cmd=cmd, chat_id=int(chat_id))
 
         # except Exception as ex:
         #     return
