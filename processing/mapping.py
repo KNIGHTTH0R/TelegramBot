@@ -50,9 +50,11 @@ genre_mapping_to_fill = {
 
 genre_mapping = {}
 for k, v in genre_mapping_to_fill.iteritems():
-    genre_mapping[MORPH.parse(k.decode('utf-8'))[0].normal_form] = [
+    k = MORPH.parse(k.decode('utf-8'))[0].normal_form
+    genre_mapping[k] = [
         MORPH.parse(e.decode('utf-8'))[0].normal_form for e in v
     ]
+
 
 nearest_when = OrderedDict({})
 for v, k in when_nearest.iteritems():

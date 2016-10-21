@@ -79,8 +79,8 @@ class Parser(object):
                 g_name = MORPH.parse(g.name)[0].normal_form
 
                 g_names = [g_name]
-                if g.name in genre_mapping:
-                    g_names = itertools.chain(g_names, genre_mapping[g_name])
+                if g_name in genre_mapping:
+                    g_names = g_names + genre_mapping[g_name]
 
                 is_flag = False
                 for name in g_names:
