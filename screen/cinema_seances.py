@@ -161,7 +161,7 @@ def detect_cinema_seances(cinema_id, movie_id, day):
 
     day = day.strftime('%d.%m') if isinstance(day, datetime) else ''
     return settings.NO_FILM_SCHEDULE.format(
-        cinema.title if cinema else '',
         film.title if film else '',
-        day
+        day,
+        cinema.title if cinema else ''
     ), markup

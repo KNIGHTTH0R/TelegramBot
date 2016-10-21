@@ -111,11 +111,11 @@ def display_movie_info(movie_id, telegram_user_id,
             ).decode('utf-8'),
             'sign_actor': settings.SIGN_ACTOR,
             'actors': ', '.join(
-                [a.name.encode('utf-8') for a in actors]
+                [a.get().name.encode('utf-8') for a in actors]
             ).decode('utf-8') if actors else None,
 
             'directors': ', '.join(
-                [a.name.encode('utf-8') for a in film.directors]
+                [a.get().name.encode('utf-8') for a in film.directors]
             ).decode('utf-8') if film.directors else None,
             'sign_producer': settings.SIGN_PRODUCER,
         }), markup, movie_poster
@@ -139,11 +139,11 @@ def display_movie_info(movie_id, telegram_user_id,
             ).decode('utf-8'),
             'sign_actor': settings.SIGN_ACTOR,
             'actors': ', '.join(
-                [a.name.encode('utf-8') for a in actors]
+                [a.get().name.encode('utf-8') for a in actors]
             ).decode('utf-8'),
 
             'directors': ', '.join(
-                [a.name.encode('utf-8') for a in film.directors]
+                [a.get().name.encode('utf-8') for a in film.directors]
             ).decode('utf-8'),
             'sign_producer': settings.SIGN_PRODUCER,
         }), markup, movie_poster
