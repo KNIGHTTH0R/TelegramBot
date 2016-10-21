@@ -7,10 +7,12 @@ import numpy as np
 
 
 def damerau_levenshtein_distance(a, b):
+
     da = defaultdict(int)
     max_dist = len(a) + len(b)
     score = np.zeros((len(a) + 2, len(b) + 2))
     score[0, 0] = max_dist
+
     for i in xrange(len(a) + 1):
         score[i + 1, 0], score[i + 1, 1] = max_dist, i
 

@@ -201,17 +201,27 @@ class Parser(object):
             )
 
             if text_date:
-                return datetime.utcnow().replace(
-                    day=int(text_date.group(0).split(' ')[0])
-                )
+                try:
+                    d_time = datetime.utcnow().replace(day=int(
+                        text_date.group(0).split(' ')[0]))
+                except:
+                    d_time = None
+
+                return d_time
 
         text = text.decode('utf-8').lower()
         n = datetime.utcnow()
 
-        digit_date = re.search('\d{1,2}[\.|:]\d{1,2}', text)
+        digit_date = re.search('\d{1,2}[\.|: ;мю,]\d{1,2}', text)
         if digit_date:
-            d, m = map(int, re.split('[:\.]', digit_date.group(0)))
-            return datetime.utcnow().replace(month=m, day=d)
+            d, m = map(int, re.split('[\.|: ;мю,]', digit_date.group(0)))
+
+            try:
+                d_time = datetime.utcnow().replace(month=m, day=d)
+            except:
+                d_time = None
+
+            return d_time
 
         _current_month_r = get_text_date(text, n)
         if _current_month_r:
