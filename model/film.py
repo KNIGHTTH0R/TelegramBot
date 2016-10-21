@@ -17,13 +17,13 @@ class Producer(ndb.Model):
     name = ndb.TextProperty()
     kinohod_id = ndb.IntegerProperty()
 
-    # @property
-    # def films(self):
-    #     return Film.query().filter(Film.producers == self.key)
-    #
-    # def add_film(self, film):
-    #     film.producers.append(self.key)
-    #     film.put()
+    @property
+    def films(self):
+        return Film.query().filter(Film.producers == self.key)
+
+    def add_film(self, film):
+        film.producers.append(self.key)
+        film.put()
 
 
 class Genre(ndb.Model):
@@ -72,13 +72,13 @@ class Actor(ndb.Model):
     name = ndb.TextProperty()
     kinohod_id = ndb.IntegerProperty()
 
-    # @property
-    # def films(self):
-    #     return Film.query().filter(Film.actors == self.key)
-    #
-    # def add_film(self, film):
-    #     film.actors.append(self.key)
-    #     film.put()
+    @property
+    def films(self):
+        return Film.query().filter(Film.actors == self.key)
+
+    def add_film(self, film):
+        film.actors.append(self.key)
+        film.put()
 
 
 class Poster(ndb.Model):
@@ -90,6 +90,14 @@ class Director(ndb.Model):
     name = ndb.TextProperty()
     kinohod_id = ndb.IntegerProperty()
 
+    @property
+    def films(self):
+        return Film.query().filter(Film.directors == self.key)
+
+    def add_film(self, film):
+        film.directors.append(self.key)
+        film.put()
+
 
 class Company(ndb.Model):
     name = ndb.TextProperty()
@@ -100,9 +108,10 @@ class Film(ndb.Model):
     originalTitle = ndb.TextProperty()
     posterLandscape = ndb.StructuredProperty(PosterLandscape, repeated=False)
     annotationFull = ndb.TextProperty()
-    producers = ndb.StructuredProperty(Producer, repeated=True)
 
+    producers = ndb.KeyProperty(kind="Producer", repeated=True)
     genres = ndb.KeyProperty(kind="Genre", repeated=True)
+    actors = ndb.KeyProperty(kind="Actor", repeated=True)
 
     weight = ndb.IntegerProperty()
     kinohod_id = ndb.IntegerProperty()
@@ -122,11 +131,10 @@ class Film(ndb.Model):
     budget = ndb.IntegerProperty()
     rating = ndb.FloatProperty()
     annotationShort = ndb.TextProperty()
-    actors = ndb.StructuredProperty(Actor, repeated=True)
     poster = ndb.StructuredProperty(Poster)
     imdbId = ndb.IntegerProperty()
     isPresale = ndb.BooleanProperty()
-    directors = ndb.StructuredProperty(Director, repeated=True)
+    directors = ndb.KeyProperty(kind="Director", repeated=True)
     isDolbyAtmos = ndb.BooleanProperty()
     companies = ndb.StructuredProperty(Company, repeated=True)
     premiereDateRussia = ndb.DateTimeProperty()
@@ -137,13 +145,13 @@ class Film(ndb.Model):
 
 def set_film_model(f, schedules):
     poster_landscape = f.get('posterLandscape')
-    producers = f.get('producers')
+    _producers = f.get('producers')
     _genres = f.get('genres')
     _images = f.get('images')
-    actors = f.get('actors')
+    _actors = f.get('actors')
     _rating = f.get('rating')
     _poster = f.get('poster')
-    directors = f.get('directors')
+    _directors = f.get('directors')
     companies = f.get('companies')
     premiere_date_world = f.get('premiereDateWorld')
     premiere_date_russia = f.get('premiereDateRussia')
@@ -161,6 +169,8 @@ def set_film_model(f, schedules):
                 elif isinstance(im, (str, unicode)):
                     _prepared.append(cls(rgb='0c0c0b', name=im))
             return _prepared
+        elif _list and isinstance(_list, dict):
+            return cls(rgb=_list.get('rgb'), name=_list.get('name'))
         elif _list and isinstance(_list, (str, unicode)):
             if cls == Poster:
                 return cls(rgb='0c0c0b', name=_list)
@@ -192,22 +202,27 @@ def set_film_model(f, schedules):
         else:
             premiereDateRussia = None
 
-    genres = []
-    if _genres:
-        for g in _genres:
-            if isinstance(g, dict):
+    def _process_name_id(a, cls):
+        new_a = []
 
-                genre_id = g.get('id')
-                if genre_id is None:
-                    continue
+        if a:
+            for p in a:
+                if isinstance(p, dict):
+                    kid = p.get('id')
+                    if kid is None:
+                        continue
 
-                g = set_model(
-                    Genre,
-                    pk=genre_id, name=g.get('name'), kinohod_id=genre_id
-                )
+                    o = set_model(
+                        cls, pk=kid, name=p.get('name'), kinohod_id=kid
+                    )
 
-                genres.append(g.key)
-                # genres.append(g.key)
+                    new_a.append(o.key)
+        return new_a
+
+    genres = _process_name_id(_genres, Genre)
+    actors = _process_name_id(_actors, Actor)
+    producers = _process_name_id(_producers, Producer)
+    directors = _process_name_id(_directors, Director)
 
     if trailers and isinstance(trailers, list):
         for trailer in trailers:
@@ -218,29 +233,35 @@ def set_film_model(f, schedules):
             if not videos:
                 videos = [trailer.get('mobile_mp4')]
 
-            o = Trailer(
-                source=Source(
-                    filename=source.get('filename'),
-                    duration=_t(source, 'duration', float),
-                    contentType=source.get('contentType')
-                ) if source else None,
+            trailer = Trailer.get_by_id(f['id'])
+            if trailer:
+                trailer_keys.append(trailer.key)
+            else:
+                o = set_model(
+                    Trailer,
+                    pk=f['id'],
 
-                videos=[
-                    Video(
-                        filename=v.get('filename'),
-                        duration=_t(v, 'duration', float),
-                        contentType=v.get('contentType')
-                    ) for v in videos
-                ] if videos else None,
+                    source=Source(
+                        filename=source.get('filename'),
+                        duration=_t(source, 'duration', float),
+                        contentType=source.get('contentType')
+                    ) if source else None,
 
-                preview=Preview(
-                    rgb=preview.get('rgb'),
-                    name=preview.get('name')
-                ) if preview else None
-            )
+                    videos=[
+                        Video(
+                            filename=v.get('filename'),
+                            duration=_t(v, 'duration', float),
+                            contentType=v.get('contentType')
+                        ) for v in videos
+                    ] if videos else None,
 
-            o.put()
-            trailer_keys.append(o.key)
+                    preview=Preview(
+                        rgb=preview.get('rgb'),
+                        name=preview.get('name')
+                    ) if preview else None
+                )
+
+                trailer_keys.append(o.key)
 
     cinemas = None
     if schedules:
@@ -269,11 +290,7 @@ def set_film_model(f, schedules):
         ageRestriction=f.get('ageRestriction'),
         annotationFull=f.get('annotationFull'),
 
-        producers=[
-            Producer(name=p.get('name'), kinohod_id=p.get('id'))
-            for p in producers if isinstance(p, dict)
-        ] if producers else None,
-
+        producers=producers,
         genres=genres,
 
         weight=_t(f, 'weight', int),
@@ -302,20 +319,14 @@ def set_film_model(f, schedules):
         rating=rating,
         annotationShort=f.get('annotationShort'),
 
-        actors=[
-            Actor(name=a.get('name'), kinohod_id=a.get('id'))
-            for a in actors if isinstance(a, dict)
-        ] if actors else None,
+        actors=actors,
 
         poster=poster,
 
         imdbId=_t(f, 'imdbId', int),
         isPresale=_t(f, 'isPresale', bool),
 
-        directors=[
-            Director(name=d.get('name'), kinohod_id=d.get('id'))
-            for d in directors if isinstance(d, dict)
-        ] if directors else None,
+        directors=directors,
 
         isDolbyAtmos=_t(f, 'isDolbyAtmos', bool),
 
