@@ -37,6 +37,7 @@ def get_model(cls, pk):
 class UserProfile(ndb.Model):
     location = ndb.JsonProperty()
     cmd = ndb.TextProperty()
+    chat_id = ndb.IntegerProperty()
     state = ndb.TextProperty(default='base')
     update = ndb.DateTimeProperty(auto_now=True)
 
