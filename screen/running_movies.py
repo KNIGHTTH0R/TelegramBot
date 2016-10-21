@@ -166,6 +166,32 @@ def display_running_movies_api(number_of_movies):
     return process_movies(data, number_of_movies, callback_url, date)
 
 
+def display_soon_films(number_of_movies):
+    return display_films(
+        number_of_movies,
+        url=settings.URL_SOON_MOVIES.format(settings.KINOHOD_API_KEY),
+        callback_url='/movies{}ts'
+    )
+
+
+def display_running_now_films(number_of_movies):
+    return display_running_movies_api(number_of_movies)
+    # display_films(
+    #     number_of_movies,
+    #     url=settings.URL_RUNNING_NOW_MOVIES.format(settings.KINOHOD_API_KEY),
+    #     callback_url='/movies{}tr}'
+    # )
+
+
+def display_films(number_of_movies, url, callback_url):
+    with contextlib.closing(urllib2.urlopen(url)) as jf:
+        data = json.loads(jf.read())
+
+    callback_url = callback_url
+    date = datetime.now().strftime(format='%d%m%Y')
+    return process_movies(data, number_of_movies, callback_url, date)
+
+
 def process_movies_db(number_of_movies, callback_url,
                       next_url='/info', **kwargs):
 

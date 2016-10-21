@@ -9,7 +9,7 @@ from screen.running_movies import get_cinema_movies
 from screen.cinemas import cinemas_from_data
 from processing.parser import Parser
 
-from commands import send_reply
+from commands import send_reply, display_movies
 
 import settings
 
@@ -144,3 +144,25 @@ def display_film_no_any_seances(bot, chat_id, no_display):
             ).render({'cinemas': cinemas, 'sign_point': settings.SIGN_POINT}),
             parse_mode='Markdown'
         )
+
+
+def detect_premiers(cmd, bot, payload, chat_id):
+
+    m = {
+        'premier': 's',
+        'films': 'r',
+    }
+
+    for k, v in settings.premier_mapping.iteritems():
+        for e in v:
+            if settings.de_uncd(cmd).find(e) > -1:
+
+                display_movies(
+                    bot, payload, '/movies{}t{}'.format(
+                        settings.FILMS_TO_DISPLAY, m[k]
+                    ), chat_id
+                )
+
+                return True
+
+    return False

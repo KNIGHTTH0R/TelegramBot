@@ -62,6 +62,7 @@ URL_GENRES = 'https://kinohod.ru/api/rest/partner/v1/movies/?genre={}&apikey={}'
 URL_GENRES_SOON = 'https://kinohod.ru/api/rest/partner/v1/movies/?genre={}&apikey={}&filter=soon'
 URL_CINEMAS = 'https://kinohod.ru/api/rest/partner/v1/cinemas/?apikey={}'
 URL_SOON_MOVIES = 'https://kinohod.ru/api/rest/partner/v1/movies/?filter=soon&apikey={}'
+URL_RUNNING_NOW_MOVIES = 'https://kinohod.ru/api/rest/partner/v1/movies/?filter=running&apikey={}'
 URL_RUNNING_MOVIES = 'https://api.kinohod.ru/api/data/2/{}/running.json.gz'
 URL_MOVIES_INFO = 'https://kinohod.ru/api/rest/partner/v1/movies/{}?apikey={}'
 URL_SEANCES = 'https://kinohod.ru/api/rest/partner/v1/movies/{}/schedules?apikey={}&rangeStart={}&limit={}'
@@ -241,3 +242,14 @@ support_a = {
     ANOTHER_PAY_ER.decode('utf-8').lower(): '{} > {} > {} > {}'.format(
         SUPPORT_INFO, PROBLEM_BUY_TICKET, NO_PAY, ANOTHER_PAY_ER)
 }
+
+premier_mapping = {
+    'premier': ['премьеры', 'кинопремьеры', 'новинки', 'новые', 'скоро'],
+    'films': ['посмотреть сегодня', 'посмотреть сейчас', 'cегодня в кино',
+              'посмотреть сегодня', 'фильмы сегодня',
+              'сейчас в кино', 'сейчас посмотреть', 'лента сейчас', 'что идет',
+              'фильмы в прокате', 'в прокате', 'ленты в прокате',
+              'сегодня в кино', 'сегодня вечером', 'посмотреть в кино',
+              'что посмотреть', 'что идёт сегодня', 'что в кино']
+}
+

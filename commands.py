@@ -19,8 +19,10 @@ from screen.seances import get_seances, display_seances_all
 from screen.help import get_help
 from screen.movie_info import display_movie_info
 from screen.cinema_seances import detect_cinema_seances
-from screen.running_movies import (get_cinema_movies, display_running_movies,
-                                   display_running_movies_api)
+from screen.running_movies import (
+    get_cinema_movies, display_running_movies, display_soon_films,
+    display_running_now_films, display_running_movies_api)
+
 from screen.cinema_where_film import get_cinemas_where_film
 from settings import start_markup
 from model.base import set_model, get_model
@@ -185,16 +187,29 @@ def display_cinema(bot, payload, cmd, chat_id):
 
 def display_movies(bot, payload, cmd, chat_id):
     bot.sendChatAction(chat_id, action='typing')
+
+    movie_t = None
+    if 't' in cmd:
+        index_t = cmd.index('t')
+        movie_t = cmd[index_t + 1:]
+        cmd = cmd[:index_t]
+
+    func = display_running_movies_api
+    if movie_t:
+        if movie_t == 's':
+            func = display_soon_films
+        elif movie_t == 'r':
+            func = display_running_now_films
+
     if 'callback_query' in payload:
         number_to_display = int(cmd[7:len(cmd)])
         # display_running_movies
-        send_reply(bot, chat_id, display_running_movies_api,
+        send_reply(bot, chat_id, func,
                    number_to_display,
                    success=int(payload['callback_query']['id']))
     else:
         # display_running_movies
-        send_reply(bot, chat_id,
-                   display_running_movies_api, settings.FILMS_TO_DISPLAY)
+        send_reply(bot, chat_id, func, settings.FILMS_TO_DISPLAY)
 
 
 def films_category(bot, payload, cmd, chat_id):

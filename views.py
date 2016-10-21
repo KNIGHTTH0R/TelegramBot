@@ -20,6 +20,8 @@ from commands import (display_nearest, display_seance, send_reply,
                       callback_movie_time_selection, callback_seance_text,
                       display_movie_nearest_cinemas, display_full_info,
                       display_cinemas_where_film)
+
+from view_processing import detect_premiers
 from screen.support import send_mail_story, start_markup, support_generation
 from screen.cinemas import get_nearest_cinemas
 from model.base import UserProfile
@@ -191,6 +193,11 @@ class CommandReceiveView(webapp2.RequestHandler):
                 track(tuid=tuid,
                       message=format(s[profile.state].reply.__name__),
                       name='support')
+
+            elif detect_premiers(cmd.encode('utf-8'), bot, payload, chat_id):
+                track(tuid=tuid,
+                      message=cmd.encode('utf-8'),
+                      name=detect_premiers.__name__)
 
             elif s[profile.state].reply(cmd.encode('utf-8'),
                                         bot, chat_id, tuid):
