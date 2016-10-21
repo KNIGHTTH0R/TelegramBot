@@ -250,7 +250,7 @@ class Parser(object):
 
     @staticmethod
     def sub_splitted(splitted):
-        return [Parser._sub_string(w) for w in splitted]
+        return filter(lambda x: x, [Parser._sub_string(w) for w in splitted])
 
     @staticmethod
     def _sub_string(s):
