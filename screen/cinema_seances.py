@@ -28,7 +28,15 @@ def _calculate_is_onsale(t_str):
     return True
 
 
-def _construct_markup(cinema_id, movie_id, day):
+def _construct_markup(cinema_id, movie_id, day, only_another=False):
+
+    if only_another:
+        return InlineKeyboardMarkup(inline_keyboard=[[
+            dict(text=settings.ANOTHER_DAY,
+                 callback_data=(
+                     '/anytimec{}m{}d'.format(cinema_id, movie_id)
+                 )),
+        ]])
 
     day_id_m = OrderedDict({settings.ON_TODAY: 0,
                             settings.ON_TOMORROW: 1,
@@ -139,7 +147,17 @@ def detect_cinema_seances(cinema_id, movie_id, day):
                     CinemaSeances(settings.SIGN_TIP, s['time'], m_p, 0, s_f)
                 )
 
-        markup = _construct_markup(cinema_id, movie_id, day)
+        f = html_data[0]['movie']
+        premier = f.get('premiereDateRussia')
+        if premier:
+            premier = datetime.strptime(premier.split('T')[0], '%Y-%m-%d')
+
+        if premier and premier > datetime.now():
+            markup = _construct_markup(cinema_id, movie_id, day,
+                                       only_another=True)
+        else:
+            markup = _construct_markup(cinema_id, movie_id, day)
+
         template = settings.JINJA_ENVIRONMENT.get_template('cinema_seances.md')
 
         if day_str:
