@@ -1,5 +1,6 @@
 # coding: utf-8
 
+from settings import MORPH
 from collections import OrderedDict
 
 stop_words = [w.decode('utf-8')
@@ -40,6 +41,18 @@ when_month = {
     'december': 'декабрь'
 }
 
+
+genre_mapping_to_fill = {
+    'комедия': ['веселые', 'комедийные'],
+    'драма': [],
+    'мультфильм': ['мультик'],
+}
+
+genre_mapping = {}
+for k, v in genre_mapping_to_fill.iteritems():
+    genre_mapping[MORPH.parse(k.decode('utf-8'))[0].normal_form] = [
+        MORPH.parse(e.decode('utf-8'))[0].normal_form for e in v
+    ]
 
 nearest_when = OrderedDict({})
 for v, k in when_nearest.iteritems():

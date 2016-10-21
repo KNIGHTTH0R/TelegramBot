@@ -5,10 +5,12 @@ import itertools
 
 from datetime import datetime, timedelta
 
-from mapping import stop_words, when_nearest, when_week, when_month
+from mapping import (stop_words, when_nearest, when_week,
+                     when_month, genre_mapping)
+
 from maching import damerau_levenshtein_distance
 from model.search import ModelSearch
-from model.film import Genre, Film, set_film_model
+from model.film import Genre, Film, set_film_model, Actor, Producer, Director
 from parse_data import Data
 from data import get_genres, get_schedule
 
@@ -37,6 +39,8 @@ class Parser(object):
 
         self.state = state
         self.text = request
+
+        self.__ids_inside = []
 
     def parse(self):
 
@@ -70,34 +74,51 @@ class Parser(object):
     def __parse_genres_api(self, is_film_object):
         genres = Genre.query().fetch()
 
-        ids_inside = []
         for t in self.splitted:
             for g in genres:
                 g_name = MORPH.parse(g.name)[0].normal_form
-                if damerau_levenshtein_distance(de_uncd(g_name), t) < 3:
-                    if not self.data.genre:
-                        self.data.genre = []
 
-                    if is_film_object:
-                        films = get_genres(g.kinohod_id)
-                        for f in films:
-                            film_id = f.get('id')
-                            if not film_id or film_id in ids_inside:
-                                continue
+                g_names = [g_name]
+                if g.name in genre_mapping:
+                    g_names = itertools.chain(g_names, genre_mapping[g_name])
 
-                            o = Film.get_by_id(film_id)
+                is_flag = False
+                for name in g_names:
+                    is_flag = self.__process_genre(
+                        name, t, g, is_film_object
+                    )
 
-                            if not o:
-                                schedules = get_schedule(film_id)
-                                o = set_film_model(f, schedules)
+                    if is_flag:
+                        break
 
-                            ids_inside.append(film_id)
-                            self.data.genre.append(o)
+                if is_flag:
+                    break
 
-                    else:
-                        self.data.genre += get_genres(g.kinohod_id)
+    def __process_genre(self, name, t, g, is_film_object):
+        if damerau_levenshtein_distance(de_uncd(name), t) < 2:
+            if not self.data.genre:
+                self.data.genre = []
 
-                    break  # breaks only one loop
+            if is_film_object:
+                films = get_genres(g.kinohod_id)
+
+                for f in films:
+                    film_id = f.get('id')
+
+                    if not film_id or film_id in self.__ids_inside:
+                        continue
+
+                    o = Film.get_by_id(film_id)
+                    if not o:
+                        schedules = get_schedule(film_id)
+                        o = set_film_model(f, schedules)
+                    self.__ids_inside.append(film_id)
+                    self.data.genre.append(o)
+            else:
+                self.data.genre += get_genres(g.kinohod_id)
+
+            return True
+        return False
 
     def __parse_genres(self):
         genres = Genre.query().fetch()
@@ -107,19 +128,36 @@ class Parser(object):
                 g_name = MORPH.parse(g.name)[0].normal_form
                 if damerau_levenshtein_distance(de_uncd(g_name), t) < 3:
 
-                    for g in g.films:
+                    for f in g.films:
 
                         if not self.data.genre:
-                            self.data.genre = [g]
+                            self.data.genre = [f]
                         else:
-                            self.data.genre.append(g)
+                            self.data.genre.append(f)
 
+                        # comment line below if not all to display
                         if len(self.data.genre) >= settings.CINEMA_TO_SHOW:
                             return
                     return
 
     def __parse_actor_producer(self):
-        pass
+        actors = Actor.query().fetch()
+        # producers = Producer.query().fetch()
+        # directors = Director.query().fetch()
+
+        for t in self.splitted:
+            for o in itertools.chain(actors):
+                p_name = MORPH.parse(o.name.split(' ')[-1])[0].normal_form
+                p_name, t = p_name.lower(), t.lower()
+                if damerau_levenshtein_distance(de_uncd(p_name), t) < 3:
+                    for f in o.films:
+                        if not self.data.actors:
+                            self.data.actors = [f]
+                        else:
+                            self.data.actors.append(f)
+                        if len(self.data.actors) >= settings.CINEMA_TO_SHOW:
+                            return
+                    # return
 
     def __parse_film(self, limit=settings.FILMS_TO_DISPLAY):
         self.data.what = ModelSearch.query_film(
