@@ -69,7 +69,7 @@ class Parser(object):
 
         # self.__parse_genres()
         self.__parse_genres_api(is_film_object)
-        self.__parse_actor_producer()
+        # self.__parse_actor_producer()
 
     def __parse_genres_api(self, is_film_object):
         genres = Genre.query().fetch()
