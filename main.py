@@ -69,7 +69,8 @@ def update_film_table(index_name='films'):
 
 class UpdateBFilmView(webapp2.RedirectHandler):
     def get(self, *args, **kwargs):
-        deferred.defer(set_film_models, )
+        # set_film_models
+        deferred.defer(update_film_table, )
 
 
 class UpdateBCinemaView(webapp2.RedirectHandler):
@@ -192,9 +193,10 @@ class ClassDeleteAllEntities(webapp2.RedirectHandler):
         deferred.defer(delete_all, )
 
 
-class CronFilmTableUpdateView(webapp2.RedirectHandler):
-    def get(self, *args, **kwargs):
+class CronFilmTableUpdateView(webapp2.RequestHandler):
+    def get(self):
         deferred.defer(update_film_table, )
+        # update_film_table(index_name='films')
 
 
 app = webapp2.WSGIApplication([
