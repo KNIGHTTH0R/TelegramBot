@@ -69,3 +69,5 @@ redis*
 # numpy zip
 *.npz
 
+# gae
+*.yaml
