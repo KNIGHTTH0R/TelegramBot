@@ -158,8 +158,9 @@ class CommandReceiveView(webapp2.RequestHandler):
         ]
 
         if (cmd.startswith('/') or
-                (profile.cmd and (profile.cmd.startswith('/') or
-                                  (profile.cmd in support_send)))):
+                (profile and profile.cmd and
+                 (profile.cmd.startswith('/') or
+                  (profile.cmd in support_send)))):
 
             func = detect_instruction(instructions, cmd)
             if func:
