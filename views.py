@@ -183,9 +183,11 @@ class CommandReceiveView(webapp2.RequestHandler):
                 # 'cinema': Schema(display_cinemas, start_markup)
             }
 
+            profile_state = 'base'
+
             if support_generation(cmd, bot, chat_id, message_id):
                 track(tuid=tuid,
-                      message=format(s[profile.state].reply.__name__),
+                      message=format(s[profile_state].reply.__name__),
                       name='support')
 
             elif detect_premiers(cmd.encode('utf-8'), bot, payload, chat_id):
@@ -193,10 +195,10 @@ class CommandReceiveView(webapp2.RequestHandler):
                       message=cmd.encode('utf-8'),
                       name=detect_premiers.__name__)
 
-            elif s[profile.state].reply(cmd.encode('utf-8'),
+            elif s[profile_state].reply(cmd.encode('utf-8'),
                                         bot, chat_id, tuid):
                 track(tuid=tuid,
-                      message=format(s[profile.state].reply.__name__),
+                      message=format(s[profile_state].reply.__name__),
                       name='parsing')
 
             else:
@@ -204,7 +206,7 @@ class CommandReceiveView(webapp2.RequestHandler):
                     bot.sendMessage(
                         chat_id, settings.DONT_UNDERSTAND,
                         parse_mode='Markdown',
-                        reply_markup=s[profile.state].markup())
+                        reply_markup=s[profile_state].markup())
                     track(tuid, 'miss understanding', 'invalid')
 
         deferred.defer(set_model, UserProfile, chat_id,
