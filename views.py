@@ -183,13 +183,6 @@ class CommandReceiveView(webapp2.RequestHandler):
                 # 'cinema': Schema(display_cinemas, start_markup)
             }
 
-            # TODO: need delete it before production
-            # TODO: sure that all states are not in 'cinema' or 'film' states
-            if profile.state != 'base':
-                profile.state = 'base'
-                deferred.defer(set_model, cls=UserProfile,
-                               pk=chat_id, state='base')
-
             if support_generation(cmd, bot, chat_id, message_id):
                 track(tuid=tuid,
                       message=format(s[profile.state].reply.__name__),
