@@ -80,6 +80,7 @@ URL_WIDGET_CINEMAS = 'http://kinohod.ru/widget/cinemas'
 BASE_KINOHOD = 'https://kinohod.ru'
 
 FILMS_TO_DISPLAY = 10
+FB_FILMS_TO_DISPLAY = 5
 CINEMAS_TO_DISPLAY = 10
 FILMS_DISPLAY_INFO = 5
 CINEMA_TO_SHOW = 3
@@ -256,3 +257,38 @@ premier_mapping = {
               'что посмотреть', 'что идёт сегодня', 'что в кино']
 }
 
+
+
+
+# Facebook Bot settings info:
+
+PAGE_ACCESS_TOKEN = ('EAAMcSZA4B6KcBAOpxNmdaXZBDHkaxZCalGTZALUV3R4EhcsBZBAIZAIVv5Itd44HyhSBhzTbDlJvZC1ftyDuZAbSS7KmQEbKLZAaVUcLuzPxB3KNDriobryZCuhaRE4hQ4f8CythdC0NtmC8i1OduEppvJm1bNBvZBmQr6vhJ7IqYNhF7ZA6FbH5oJ2ZB')
+
+DISCOUNT = ('А при оплате картой MasterCard и Maestro на Киноходе Вы получите скидку 10%').decode('utf-8')
+
+SORRY_I_DONT_UNDERSTAND = ('Извините, я не понял, что именно вас интересует. Спросите еще раз или воспользуйтесь кнопками меню')
+
+URL_CINEMAS_GEO = 'https://kinohod.ru/api/rest/partner/v1/cinemas/?apikey={}&latitude={}&longitude={}&sort=distance'
+URL_SEANCES_GEO = ('https://kinohod.ru/api/rest/partner/v1/movies/{}/schedules?apikey={}&rangeStart={}&limit={}&latitude={}&longitude={}&sort=distance')
+URL_SEANCES_GEO_ANOTHER_DATE = ('https://kinohod.ru/api/rest/partner/v1/movies/{}/schedules?apikey={}&date={}&rangeStart={}&limit={}&latitude={}&longitude={}&sort=distance')
+URL_SEANCES = 'https://kinohod.ru/api/rest/partner/v1/movies/{}/schedules?apikey={}&rangeStart={}&limit={}'
+URL_SEANCES_SHORT = 'https://kinohod.ru/api/rest/partner/v1/movies/{}/schedules?apikey={}&limit={}'
+URL_CINEMA_SEANCES_SHORT = 'https://kinohod.ru/api/rest/partner/v1/cinemas/{}/schedules?apikey={}&date={}'
+URL_BASE_C = 'https://kinohod.ru/c/320x120/'
+QUERY_SEARCH_URL = 'https://kinohod.ru/api/rest/partner/v1/movies?apikey={}&{}'
+URL_PREMIERES = 'https://kinohod.ru/api/rest/partner/v1/movies?apikey={}&filter=premiere'
+ANOTHER_FB_DAY = 3
+
+CINEMA_LIST = 'Мы предлагаем Вам список кинотеатров, ну а если среди них не можете найти нужный вам - введите какую-нибудь информацию о нём'
+
+
+SORRY_FOUND_NOTHING = 'Увы, мы ничего не нашли'
+NO_SEANCES_FOR_DAY = 'Увы, на интересующий Вас день сеансов нет. Посмотрите на другой день.'
+KINOHOD_WIDGET_WITH_UTM_SOURCE = 'https://kinohod.ru/widget/?utm_source=botfb&{}#scheme_{}'
+HELLO_IM_BOT='Здравствуйте!\n''Я – официальный бот Кинохода, сервиса покупки билетов в кино онлайн.\nЯ помогу вам выбрать фильм, найти нужный кинотеатр и купить билеты на подходящий сеанс'
+NO_MORE_FILMS = 'Фильмов больше нет.'
+TELL_DATE = 'Расскажите, когда бы Вы хотели пойти в кино? '
+WE_OFFER_LIST = 'Мы предлагаем Вам список кинотеатров, ну а  если среди них не можете найти нужный вам - введите какую-нибудь информацию о нём'
+DESCRIBE_YOUR_PROBLEM = 'Пожалуйста, опишите Вашу проблему'
+SHARE_YOUR_GEO = 'Поделитесь с нами Вашей геопозицией или укажите название кинотеатра или ближайшую к Вам станцию метро или ТЦ и мы сможем сортировать результаты поиска по удалённости от Вас.'
+SORRY_DONT_PROCEED = 'Извините, такую информацию мы не обрабатываем'
