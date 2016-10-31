@@ -68,8 +68,6 @@ def display_afisha(request, bot, chat_id, tuid):
             now = datetime.now()
             time = data.when if data.when is not None else now
 
-            bot.sendMessage(chat_id, time.strftime('%d-%m-%Y'))
-
             for p in data.place:
                 for w in category:
 

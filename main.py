@@ -204,7 +204,7 @@ app = webapp2.WSGIApplication([
     # ('/delete_entities', ClassDeleteAllEntities),
     ('/update_cinema', UpdateBCinemaView),
     # ('/delete_all_cinema_docs', DeleteAllSearchCinemaDocumentsView),
-    # ('/delete_all_film_docs', DeleteAllSearchFilmDocumentsView),
+    ('/delete_all_film_docs', DeleteAllSearchFilmDocumentsView),
     ('/search_cinema', CinemaSearchIndexView),
     ('/search_film', FilmSearchIndexView),
     # ('/count_cinemas', CountCinemasView),
