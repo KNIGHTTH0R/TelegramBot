@@ -145,8 +145,7 @@ PROBLEM_BUY_TICKET = 'Проблемы с покупкой билета'
 
 TICKET_RETURNING = 'Возврат билета'
 TICKET_RETURNING_REPLY = 'У каждого кинотеатра свои правила возврата билета. Перейдите по ссылке «Вернуть билеты» в письме от Кинохода.'
-TEXT_INLINE_EMPTY = 'Эх, что - то ввести все -таки стоит'
-KINOHODBOT_NAME = 'КиноходБот'
+
 ANOTHER = 'Другое'
 ANOTHER_DAY = 'Другой день'
 ENTER_LOCATION = 'Отправьте мне свое местоположение: нажмите {} и выберите Location или введите название кинотеатра, торгового центра, станции метро'.decode('utf-8').format(SIGN_CLIP).encode('utf-8')
@@ -168,8 +167,8 @@ BACK = 'Назад'
 SUPPORT_HELP = 'Чем я могу Вам помочь? {}'.decode('utf-8').format(SIGN_DOWN_FINGER)
 WHAT_PROBLEM = 'В чем проблема?'
 NO_MAIL_TICKET = 'Не пришло письмо с билетом'
-FILM_PREVIEW = 'Введите часть названия фильма или его жанр, чтобы я нашел его {}'.decode('utf-8').format(SIGN_FINGER)
-FILM_PREVIEW_SHORT = 'Введите часть названия фильма или его жанр, чтобы я нашел его'
+FILM_PREVIEW = 'Введите часть названия фильма или его жанр ии же актера, чтобы я нашел его {}'.decode('utf-8').format(SIGN_FINGER)
+
 NO_PAY = 'Не прошла оплата'
 CANNOT_PAY = 'Невозможно оплатить'
 ERROR_SERVER_CONN = 'Ошибка соединения с сервером'

@@ -7,13 +7,11 @@ from collections import OrderedDict, namedtuple
 import endpoints
 import webapp2
 import telepot
-import telebot
 
 from google.appengine.api import urlfetch
 from google.appengine.ext import deferred
 
 from botan import track
-from inline import bot_inline
 from commands import (display_nearest, display_seance, send_reply,
                       display_cinema, display_seances_cinema, callback_seance,
                       display_schedule, display_movies, display_future_seances,
@@ -104,8 +102,6 @@ class CommandReceiveView(webapp2.RequestHandler):
     def post(self):
 
         bot = telepot.Bot(settings.TELEGRAM_BOT_TOKEN)
-        # inline_mode = InlineMode(is_inline=False)
-
         urlfetch.set_default_fetch_deadline(30)
         instructions = make_instruction()
         raw = self.request.body.decode('utf-8')
@@ -114,10 +110,6 @@ class CommandReceiveView(webapp2.RequestHandler):
             payload = json.loads(raw)
         except ValueError:
             raise endpoints.BadRequestException(message='Invalid request body')
-
-        #  inline mode
-        # update = telebot.types.Update.de_json(raw)
-        # bot_inline.process_new_updates([update])
 
         cmd, is_group, profile, chat_id = None, False, None, None
         tuid, message_id = 0, 0
