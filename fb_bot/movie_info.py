@@ -41,7 +41,7 @@ def display_movie_info(movie_id):
     else:
         trailer_url = ''
 
-    return html_data['annotationFull'], movie_poster, trailer_url
+    return html_data['annotationShort'], movie_poster, trailer_url
 
 
 def display_full_movie_info(movie_id):

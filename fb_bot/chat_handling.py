@@ -216,6 +216,7 @@ def handle_text_message(recipient_id, message):
             movies = []
 
             for f in film:
+
                 if not isinstance(f, dict):
                     f = f.to_dict()
                 my_id = 'kinohod_id' if 'kinohod_id' in f else 'id'
@@ -231,7 +232,8 @@ def handle_text_message(recipient_id, message):
 
                 movies.append(f_info)
 
-            movies = movies[:settings.FILMS_TO_DISPLAY]
+                if len(movies) == settings.FILMS_TO_DISPLAY:
+                    break
 
             if len(movies) == 0:
                 res = _construct_payload(
