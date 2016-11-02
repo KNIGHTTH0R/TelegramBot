@@ -13,7 +13,7 @@ from google.appengine.api import urlfetch
 from google.appengine.ext import deferred
 
 from botan import track
-from inline import bot_inline
+# from inline import bot_inline
 
 from commands import (display_nearest, display_seance, send_reply,
                       display_cinema, display_seances_cinema, callback_seance,

@@ -12,7 +12,7 @@ from processing.parser import Parser
 import settings
 
 
-bot_inline = telebot.TeleBot(settings.TELEGRAM_BOT_TOKEN)
+# bot_inline = telebot.TeleBot(settings.TELEGRAM_BOT_TOKEN)
 CASHE_TIME = 86400
 
 
@@ -21,7 +21,7 @@ class InlineMode(object):
         self.is_inline = is_inline
 
 
-@bot_inline.inline_handler(lambda query: len(query.query) is 0)
+# @bot_inline.inline_handler(lambda query: len(query.query) is 0)
 def empty_query(query):
 
     try:
@@ -34,12 +34,12 @@ def empty_query(query):
                     parse_mode='Markdown'
                 )
         )
-        bot_inline.answer_inline_query(query.id, [r], cache_time=CASHE_TIME)
+        # bot_inline.answer_inline_query(query.id, [r], cache_time=CASHE_TIME)
     except Exception as e:
         print(e)
 
 
-@bot_inline.inline_handler(lambda query: len(query.query) > 0)
+# @bot_inline.inline_handler(lambda query: len(query.query) > 0)
 def query_text(query):
 
     def process_what(whats, next_url='/seance'):
@@ -98,9 +98,9 @@ def query_text(query):
 
         if category and not flag:
             inline_display_films = process_what(category)
-            bot_inline.answer_inline_query(
-                query.id, inline_display_films, cache_time=CASHE_TIME
-            )
+            # bot_inline.answer_inline_query(
+            #     query.id, inline_display_films, cache_time=CASHE_TIME
+            # )
 
             return True
 

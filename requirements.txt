@@ -1,5 +1,6 @@
 requests==2.9.1
 urllib3
+pyTelegramBotAPI
 telepot
 multipart
 pymorphy2

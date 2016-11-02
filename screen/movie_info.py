@@ -38,10 +38,12 @@ def display_movie_info(movie_id, telegram_user_id=None,
     now = datetime.now()
 
     film = Film.get_by_id(str(movie_id))
+
+    telegram_user_id = telegram_user_id if telegram_user_id else 0
     if not film:
         display_movie_info_api(
             movie_id,
-            telegram_user_id if telegram_user_id else 0,
+            telegram_user_id,
             next_url='/seance'
         )
 
@@ -57,7 +59,7 @@ def display_movie_info(movie_id, telegram_user_id=None,
 
         trailer_url = _get_movie_trailer_link(video_hash)
         shorten_url = botan.shorten_url(
-            telegram_user_id + trailer_url,
+            str(telegram_user_id) + trailer_url,
             settings.BOTAN_TOKEN,
             telegram_user_id if telegram_user_id else 0
         )
