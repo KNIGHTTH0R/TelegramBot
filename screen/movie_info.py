@@ -33,13 +33,17 @@ def _get_movie_poster(poster_hash):
         return
 
 
-def display_movie_info(movie_id, telegram_user_id,
+def display_movie_info(movie_id, telegram_user_id=None,
                        next_url='/seance', full=False):
     now = datetime.now()
 
     film = Film.get_by_id(str(movie_id))
     if not film:
-        display_movie_info_api(movie_id, telegram_user_id, next_url='/seance')
+        display_movie_info_api(
+            movie_id,
+            telegram_user_id if telegram_user_id else 0,
+            next_url='/seance'
+        )
 
     if film.poster:
         movie_poster = _get_movie_poster(film.poster.name)
@@ -52,8 +56,10 @@ def display_movie_info(movie_id, telegram_user_id,
         video_hash = trailer.videos[0].filename
 
         trailer_url = _get_movie_trailer_link(video_hash)
-        shorten_url = botan.shorten_url(trailer_url, settings.BOTAN_TOKEN,
-                                        telegram_user_id)
+        shorten_url = botan.shorten_url(
+            trailer_url,
+            settings.BOTAN_TOKEN,
+            telegram_user_id if telegram_user_id else 0)
 
         if film.premiereDateRussia and film.premiereDateRussia > now:
             markup = InlineKeyboardMarkup(inline_keyboard=[[
