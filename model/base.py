@@ -41,6 +41,17 @@ class UserProfile(ndb.Model):
     state = ndb.TextProperty(default='base')
     update = ndb.DateTimeProperty(auto_now=True)
 
+    # FB Bot model:
+
+    facebook_id = ndb.IntegerProperty()
+    cur_movie_id = ndb.IntegerProperty()
+    cur_cinema_id = ndb.IntegerProperty()
+    cur_lat = ndb.FloatProperty()
+    cur_lng = ndb.FloatProperty()
+    last_callback = ndb.StringProperty()
+    last_searched_movie = ndb.StringProperty()
+    bug_description = ndb.StringProperty()
+
 
 class ReturnTicket(ndb.Model):
     number = ndb.IntegerProperty()

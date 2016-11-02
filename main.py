@@ -1,4 +1,5 @@
-#!/usr/bin/env python
+# coding: utf-8
+# !/usr/bin/env python
 # coding: utf-8
 #
 # Copyright 2007 Google Inc.
@@ -22,6 +23,7 @@ import webapp2
 
 from google.appengine.ext import deferred, ndb
 
+from fb_bot.fb_webhook import FBWebHookHandler
 from views import CommandReceiveView
 from model.search import ModelSearch, create_film_documents
 from data import get_data, get_schedule
@@ -215,4 +217,5 @@ app = webapp2.WSGIApplication([
     ('/film_update', CronFilmTableUpdateView),
     # should be exchanged to /botAPI_KINOHOD like unique link
     ('/bot{}'.format(settings.KINOHOD_API_KEY), CommandReceiveView),
+    ('/fb_webhook{}'.format(settings.PAGE_ACCESS_TOKEN), FBWebHookHandler)
 ], debug=True)
