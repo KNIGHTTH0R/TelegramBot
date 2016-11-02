@@ -1,0 +1,15 @@
+pyTelegramBotAPI-2.2.3.dist-info/DESCRIPTION.rst,sha256=oDbN5l09XJnM8MQW843mnUTLeg5XKcmN9xsrhT8YFuc,25459
+pyTelegramBotAPI-2.2.3.dist-info/METADATA,sha256=F6ngFv8p_YsfvNqQvhVolyssLWKx5U0dGfV7_St8dfM,26195
+pyTelegramBotAPI-2.2.3.dist-info/RECORD,,
+pyTelegramBotAPI-2.2.3.dist-info/WHEEL,sha256=siaGhHNH1IivIQO0_6mMI-08XttA7Qr2K9-kq5rC0zk,96
+pyTelegramBotAPI-2.2.3.dist-info/metadata.json,sha256=tdpXlVSxNZZ73NZLcIWB96_fq_5jyvevWh6WaTNJguw,908
+pyTelegramBotAPI-2.2.3.dist-info/top_level.txt,sha256=UDKznNlv1Ktg7ueJ5IncIAcKFT9wUuMnOxMETN62_Rs,8
+telebot/__init__.py,sha256=7X-sWRUrxGwaRM5B_ZiTyn-l9sHNQrGGLKe1x3q3CT0,36851
+telebot/apihelper.py,sha256=lum77UZHLF53sIYFl3B9PGwzqr9PghwjWTM1unoMBWw,21494
+telebot/types.py,sha256=o3LpEVnNf3HB75H4PncIWdPN-vz4TC0kjNyvr1WdUAU,58766
+telebot/util.py,sha256=6lPUXqOw5hSRnAZmBJwY9SE9Knd1D48ZvHOuzM_-xl8,7051
+pyTelegramBotAPI-2.2.3.dist-info/INSTALLER,sha256=zuuue4knoyJ-UwPPXg8fezS7VCrXJQrAP7zeNuwvFQg,4
+telebot/types.pyc,,
+telebot/util.pyc,,
+telebot/__init__.pyc,,
+telebot/apihelper.pyc,,
