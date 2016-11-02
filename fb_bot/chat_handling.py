@@ -224,18 +224,22 @@ def handle_text_message(recipient_id, message):
                 (description, poster, trailer_url) = display_movie_info(
                     f[my_id]
                 )
+
                 f_info = construct_film_info(
                     poster, description, trailer_url, f
                 )
+
                 movies.append(f_info)
-                # else:
-                #     continue
+
+            movies = movies[:settings.FILMS_TO_DISPLAY]
 
             if len(movies) == 0:
                 res = _construct_payload(
                     settings.SORRY_FOUND_NOTHING, recipient_id
                 )
+
                 return res
+
             payload = json.dumps(
                 construct_final_payload(
                     recipient_id, movies, settings.FB_FILMS_TO_DISPLAY
