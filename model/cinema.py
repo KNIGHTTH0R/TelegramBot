@@ -4,6 +4,7 @@ from google.appengine.ext import ndb
 
 from distance import distance
 from model.base import set_model
+from base import _t
 
 
 class SubwayStation(ndb.Model):
@@ -62,15 +63,15 @@ def set_cinema_model(p):
 
         shortTitle=p.get('shortTitle'),
         website=p.get('website'),
-        network=int(p.get('network')),
-        distance=int(p.get('distance')),
+        network=_t(p, 'network', int),
+        distance=_t(p, 'distance', int),
         mall=p.get('mall'),
 
         photo=([hash_photo for hash_photo in p.get('photo')]
                if p.get('photo') else None),
 
-        isSale=bool(p.get('isSale')),
-        city=int(p.get('city')),
+        isSale=_t(p, 'isSale', bool),
+        city=_t(p, 'city', int),
         address=p.get('address'),
         kinohod_id=p.get('id'),
 
