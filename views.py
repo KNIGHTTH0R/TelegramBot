@@ -14,7 +14,7 @@ from google.appengine.ext import deferred
 
 from botan import track
 # from inline import bot_inline
-
+ 
 from commands import (display_nearest, display_seance, send_reply,
                       display_cinema, display_seances_cinema, callback_seance,
                       display_schedule, display_movies, display_future_seances,
@@ -155,72 +155,72 @@ class CommandReceiveView(webapp2.RequestHandler):
         elif cmd is None:
             return
 
-        # try:
-        profile = get_model(UserProfile, chat_id)
-        cmd = cmd.lower()
-        func_detected_flag = False
+        try:
+            profile = get_model(UserProfile, chat_id)
+            cmd = cmd.lower()
+            func_detected_flag = False
 
-        support_send = [
-            settings.NO_AGAIN.decode('utf-8').lower(),
-            settings.NO_MAIL_SENDED.decode('utf-8').lower(),
-            settings.ANOTHER_PAY_ER.decode('utf-8').lower()
-        ]
+            support_send = [
+                settings.NO_AGAIN.decode('utf-8').lower(),
+                settings.NO_MAIL_SENDED.decode('utf-8').lower(),
+                settings.ANOTHER_PAY_ER.decode('utf-8').lower()
+            ]
 
-        if (cmd.startswith('/') or
-                (profile and profile.cmd and
-                 (profile.cmd.startswith('/') or
-                  (profile.cmd in support_send)))):
+            if (cmd.startswith('/') or
+                    (profile and profile.cmd and
+                     (profile.cmd.startswith('/') or
+                      (profile.cmd in support_send)))):
 
-            func = detect_instruction(instructions, cmd)
-            if func:
-                func(bot, payload, cmd, chat_id)
-                func_detected_flag = True
-                track(tuid, '{} called'.format(func.__name__), func.__name__)
-
-            else:
-                cb_fn = detect_cb(callback_instruction(), profile)
-                if cb_fn:
+                func = detect_instruction(instructions, cmd)
+                if func:
+                    func(bot, payload, cmd, chat_id)
                     func_detected_flag = True
-                    cb_fn(tuid, bot, chat_id, profile.cmd, cmd, profile)
+                    track(tuid, '{} called'.format(func.__name__), func.__name__)
 
-        if not func_detected_flag:
-            Schema = namedtuple('Schema', ['reply', 'markup'])
+                else:
+                    cb_fn = detect_cb(callback_instruction(), profile)
+                    if cb_fn:
+                        func_detected_flag = True
+                        cb_fn(tuid, bot, chat_id, profile.cmd, cmd, profile)
 
-            s = {
-                'base': Schema(display_afisha, start_markup),
-                # 'films': Schema(display_films, start_markup),
-                # 'cinema': Schema(display_cinemas, start_markup)
-            }
+            if not func_detected_flag:
+                Schema = namedtuple('Schema', ['reply', 'markup'])
 
-            profile_state = 'base'
+                s = {
+                    'base': Schema(display_afisha, start_markup),
+                    # 'films': Schema(display_films, start_markup),
+                    # 'cinema': Schema(display_cinemas, start_markup)
+                }
 
-            if support_generation(cmd, bot, chat_id, message_id):
-                track(tuid=tuid,
-                      message=format(s[profile_state].reply.__name__),
-                      name='support')
+                profile_state = 'base'
 
-            elif detect_premiers(cmd.encode('utf-8'), bot, payload, chat_id):
-                track(tuid=tuid,
-                      message=cmd.encode('utf-8'),
-                      name=detect_premiers.__name__)
+                if support_generation(cmd, bot, chat_id, message_id):
+                    track(tuid=tuid,
+                          message=format(s[profile_state].reply.__name__),
+                          name='support')
 
-            elif s[profile_state].reply(cmd.encode('utf-8'),
-                                        bot, chat_id, tuid):
-                track(tuid=tuid,
-                      message=format(s[profile_state].reply.__name__),
-                      name='parsing')
+                elif detect_premiers(cmd.encode('utf-8'), bot, payload, chat_id):
+                    track(tuid=tuid,
+                          message=cmd.encode('utf-8'),
+                          name=detect_premiers.__name__)
 
-            else:
-                if not is_group:
-                    bot.sendMessage(
-                        chat_id, settings.DONT_UNDERSTAND,
-                        parse_mode='Markdown',
-                        reply_markup=s[profile_state].markup())
-                    track(tuid, 'miss understanding', 'invalid')
+                elif s[profile_state].reply(cmd.encode('utf-8'),
+                                            bot, chat_id, tuid):
+                    track(tuid=tuid,
+                          message=format(s[profile_state].reply.__name__),
+                          name='parsing')
 
-        deferred.defer(set_model, UserProfile, chat_id,
-                       cmd=cmd, chat_id=int(chat_id))
+                else:
+                    if not is_group:
+                        bot.sendMessage(
+                            chat_id, settings.DONT_UNDERSTAND,
+                            parse_mode='Markdown',
+                            reply_markup=s[profile_state].markup())
+                        track(tuid, 'miss understanding', 'invalid')
 
-        # except Exception as ex:
-        #     return
+            deferred.defer(set_model, UserProfile, chat_id,
+                           cmd=cmd, chat_id=int(chat_id))
+
+        except Exception as ex:
+            return
         # raise endpoints.BadRequestException(ex.message)
