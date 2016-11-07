@@ -1,4 +1,4 @@
 cron:
 - description: daily film db update
-  url: /film_update/
+  url: /film_update
   schedule: every day 4:00
