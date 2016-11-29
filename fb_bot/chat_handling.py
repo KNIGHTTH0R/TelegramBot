@@ -6,6 +6,7 @@ from google.appengine.api import mail
 from google.appengine.ext import deferred
 
 import settings
+from data import detect_city_id_by_location
 
 from fb_bot.cinema_seances import display_cinema_seances_short
 from fb_bot.cinema_seances import display_cinema_seances
@@ -115,7 +116,8 @@ def _construct_cinema_movie_generic(cinema, movie_id):
 
     stations_str = ', '.join(
         map(lambda x: x.get('name', ''), cinema.get('subway_stations'))
-    ) if 'subway_stations' in cinema else ''
+    ) if ('subway_stations' in cinema and
+          isinstance(cinema['subway_stations'], list)) else ''
 
     button = {
         'type': 'postback',
@@ -170,98 +172,111 @@ def construct_movies_list(html):
     return movies
 
 
+def check_film_screens(films):
+    if films:
+        for f in films:
+            f = f.to_dict()
+            if f.get('cinemas'):
+                return True
+    return False
+
+
 def handle_text_message(recipient_id, message):
-    search_dict = {
-        'search': message.encode('utf-8')
-    }
-    url_encoded_dict = urllib.urlencode(search_dict)
-    query_url = settings.QUERY_SEARCH_URL.format(
-        settings.KINOHOD_API_KEY, url_encoded_dict
-    )
+    city_id = 1
+    u_f = get_by_recipient_id(recipient_id)
+    if u_f and u_f.cur_lat and u_f.cur_lng:
+        l = {'latitude': u_f.cur_lat, 'longitude': u_f.cur_lng}
+        city_id = detect_city_id_by_location(l)
+    parser = Parser(message.encode('utf-8'), 'base', city_id=city_id)
+    parser.parse()
+    film = parser.data.what
+    place = parser.data.place
+    if not check_film_screens(film) or (not film and not place):
+        parser.parser_special()
+        film = parser.data.genre
 
-    film_kinohod_api = get_data(query_url)
+    if film:
+        movies = []
 
-    query_url_soon = query_url + '&filter=soon'
-    film_kinohod_api_soon = get_data(query_url_soon)
+        for f in film:
 
-    if film_kinohod_api:
-        movies = construct_movies_list(film_kinohod_api)
+            if not isinstance(f, dict):
+                f = f.to_dict()
+            my_id = 'kinohod_id' if 'kinohod_id' in f else 'id'
+
+            (description, poster, trailer_url) = display_movie_info(
+                f[my_id]
+            )
+
+            f_info = construct_film_info(
+                poster, description, trailer_url, f
+            )
+
+            movies.append(f_info)
+
+            if len(movies) == settings.FILMS_TO_DISPLAY:
+                break
+
+        if len(movies) == 0:
+            res = _construct_payload(
+                settings.SORRY_FOUND_NOTHING, recipient_id
+            )
+
+            return res
+
         payload = json.dumps(
             construct_final_payload(
                 recipient_id, movies, settings.FB_FILMS_TO_DISPLAY
             )
         )
-
         return payload
 
-    elif film_kinohod_api_soon:
-        movies = construct_movies_list(film_kinohod_api_soon)
-        payload = json.dumps(
-            construct_final_payload(
-                recipient_id, movies, settings.FB_FILMS_TO_DISPLAY
+    elif place:
+
+        place = parser.data.place
+        cinemas = []
+        for c in place:
+            c_info = construct_cinema_generic(
+                c.to_dict(), recipient_id
             )
+            cinemas.append(c_info)
+        payload = contruct_cinemas(
+            recipient_id, cinemas, 10
         )
+        payload = json.dumps(payload)
         return payload
 
     else:
+        search_dict = {
+            'search': message.encode('utf-8')
+        }
+        url_encoded_dict = urllib.urlencode(search_dict)
+        query_url = settings.QUERY_SEARCH_URL.format(
+            settings.KINOHOD_API_KEY, url_encoded_dict
+        )
 
-        parser = Parser(message.encode('utf-8'), 'base')
-        parser.parse()
-        film = parser.data.what
-        if not film:
-            parser.parser_special()
-            film = parser.data.genre
-        place = parser.data.place
-        if film:
-            movies = []
+        film_kinohod_api = get_data(query_url)
 
-            for f in film:
+        query_url_soon = query_url + '&filter=soon'
+        film_kinohod_api_soon = get_data(query_url_soon)
 
-                if not isinstance(f, dict):
-                    f = f.to_dict()
-                my_id = 'kinohod_id' if 'kinohod_id' in f else 'id'
-
-                # if f.get('cinemas'):
-                (description, poster, trailer_url) = display_movie_info(
-                    f[my_id]
-                )
-
-                f_info = construct_film_info(
-                    poster, description, trailer_url, f
-                )
-
-                movies.append(f_info)
-
-                if len(movies) == settings.FILMS_TO_DISPLAY:
-                    break
-
-            if len(movies) == 0:
-                res = _construct_payload(
-                    settings.SORRY_FOUND_NOTHING, recipient_id
-                )
-
-                return res
-
+        if film_kinohod_api:
+            movies = construct_movies_list(film_kinohod_api)
             payload = json.dumps(
                 construct_final_payload(
                     recipient_id, movies, settings.FB_FILMS_TO_DISPLAY
                 )
             )
+
             return payload
 
-        elif place:
-
-            place = parser.data.place
-            cinemas = []
-            for c in place:
-                c_info = construct_cinema_generic(
-                    c.to_dict(), recipient_id
+        elif film_kinohod_api_soon:
+            movies = construct_movies_list(film_kinohod_api_soon)
+            payload = json.dumps(
+                construct_final_payload(
+                    recipient_id, movies, settings.FB_FILMS_TO_DISPLAY
                 )
-                cinemas.append(c_info)
-            payload = contruct_cinemas(
-                recipient_id, cinemas, 10
             )
-            payload = json.dumps(payload)
             return payload
 
         else:
@@ -293,7 +308,16 @@ def handle_text_with_payload(u_info, recipient_id, payload, message):
         else:
             return
         movie_id = payload[len('seances'):i_n]
-        parser = Parser(message.encode('utf-8'), 'cinema')
+        city_id = 1
+        u_f = get_by_recipient_id(recipient_id)
+        if u_f and u_f.cur_lat and u_f.cur_lng:
+            l = {'latitude': u_f.cur_lat, 'longitude': u_f.cur_lng}
+            city_id = detect_city_id_by_location(l)
+
+        parser = Parser(
+            message.encode('utf-8'), 'cinema', city_id=city_id
+        )
+
         parser.parse()
         data = parser.data.place
         cinemas = []
@@ -464,7 +488,9 @@ def handle_quick_reply(payload, recipient_id):
         i_n, l_n = payload.index('num'), len('num')
         movie_id = payload[len('seances'):i_n]
         starting_n = payload[i_n + l_n:i_d]
-        date = datetime.strptime(payload[i_d + 1: len(payload)], '%Y-%m-%d')
+        date = datetime.strptime(
+            payload[i_d + 1: len(payload)][0:10], '%Y-%m-%d'
+        )
 
         u_info = get_by_recipient_id(recipient_id)
 

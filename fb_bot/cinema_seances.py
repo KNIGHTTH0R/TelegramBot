@@ -308,6 +308,23 @@ def _construct_final_generic_no_seances(recipient_id, cinema_id,
     return payload
 
 
+def detect_city_id_by_location(location):
+    url = settings.URL_CITY_ID_BY_LOC.format(
+        settings.URL_CITIES,
+        settings.KINOHOD_API_KEY,
+        location.get('latitude'), location.get('longitude')
+    )
+    data = get_data(url)
+    if data and 'id' in data[0]:
+        return data[0]['id']
+
+    return '1'  # Id for Moscow
+
+
+def append_city_id_to_url(url, city_id):
+    return '{}{}'.format(url, '&city={}'.format(city_id))
+
+
 def display_cinema_seances_short(recipient_id, movie_id, starting_n=0,
                                  lat=0.0, lng=0.0, date=None):
     starting_n = int(starting_n)
@@ -315,7 +332,7 @@ def display_cinema_seances_short(recipient_id, movie_id, starting_n=0,
     url_movies_info = settings.URL_MOVIES_INFO.format(
         movie_id, settings.KINOHOD_API_KEY
     )
-
+    location = {'latitude': lat, 'longitude': lng}
     html_data = get_data(url_movies_info)
     if ('premiereDateRussia' in html_data and
        html_data['premiereDateRussia'] is not None):
@@ -332,12 +349,17 @@ def display_cinema_seances_short(recipient_id, movie_id, starting_n=0,
                 premiere_date_fromatted, starting_n,
                 starting_n + 1000, lat, lng
             )
+            if lat != 0.0 and lng != 0.0:
+                city_id = detect_city_id_by_location(location)
+                url = append_city_id_to_url(url, city_id)
         else:
             if lat != 0.0 and lng != 0.0:
                 url = settings.URL_SEANCES_GEO.format(
                     str(movie_id), settings.KINOHOD_API_KEY, starting_n,
                     starting_n + 1000, lat, lng
                 )
+                city_id = detect_city_id_by_location(location)
+                url = append_city_id_to_url(url, city_id)
 
             else:
                 url = settings.URL_SEANCES.format(
@@ -350,7 +372,8 @@ def display_cinema_seances_short(recipient_id, movie_id, starting_n=0,
                 str(movie_id), settings.KINOHOD_API_KEY, starting_n,
                 starting_n + 1000, lat, lng
             )
-
+            city_id = detect_city_id_by_location(location)
+            url = append_city_id_to_url(url, city_id)
         else:
             url = settings.URL_SEANCES.format(
                 str(movie_id), settings.KINOHOD_API_KEY, starting_n,

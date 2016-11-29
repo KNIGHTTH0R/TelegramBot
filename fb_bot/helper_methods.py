@@ -13,6 +13,8 @@ def get_data(url):
 
 
 def get_by_recipient_id(recipient_id):
+    if not recipient_id:
+        return None
     u_info = (UserProfile.query(UserProfile.facebook_id == recipient_id).get())
     if not u_info:
         u_info = UserProfile()

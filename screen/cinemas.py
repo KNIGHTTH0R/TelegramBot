@@ -7,6 +7,7 @@ import urllib2
 import json
 
 from cinema_where_film import get_cinemas_where_film
+from data import detect_city_id_by_location
 
 from model.base import get_model
 from model.base import UserProfile
@@ -18,14 +19,10 @@ import settings
 
 from telepot.namedtuple import InlineKeyboardMarkup
 
+from screen.seances import get_data
 
 Cinema = namedtuple('Cinema', ['title', 'link', 'subways'])
 Subway = namedtuple('Subway', ['name', 'distance'])
-
-
-def get_data(url):
-    with contextlib.closing(urllib2.urlopen(url)) as jf:
-        return json.loads(jf.read())
 
 
 def get_nearest_cinemas(bot, chat_id, number_of_cinemas,
@@ -39,28 +36,31 @@ def get_nearest_cinemas(bot, chat_id, number_of_cinemas,
         return None, None
 
     l = json.loads(u.location)
-    url = '{}?lat={}&long={}&sort=distance&cityId=1'.format(
-        settings.URL_WIDGET_CINEMAS, l.get('latitude'), l.get('longitude'),
+    city_id = detect_city_id_by_location(l)
+    url = '{}&latitude={}&longitude={}&sort=distance&city={}'.format(
+        settings.URL_CINEMAS.format(settings.KINOHOD_API_KEY),
+        l.get('latitude'), l.get('longitude'), city_id
     )
 
     film = None
     if movie_id:
         film = Film.get_by_id(str(movie_id))
 
-    r = get_data(url)
-    data = r.get('data')
+    data = get_data(url)
 
     if not data:
         return settings.DONT_UNDERSTAND, None
 
     cinemas = []
     template = settings.JINJA_ENVIRONMENT.get_template('cinema_where_film.md')
+    right_border = number_of_cinemas
     for film_counter in xrange(number_of_cinemas - settings.CINEMA_TO_SHOW,
-                               number_of_cinemas):
+                               right_border):
 
         if film_counter < len(data):
             cinema = data[film_counter]
         else:
+
             return (settings.NO_FILMS,
                     InlineKeyboardMarkup(inline_keyboard=[[
                         dict(text=settings.FIRST_THREE,
@@ -90,7 +90,9 @@ def get_nearest_cinemas(bot, chat_id, number_of_cinemas,
         )
 
     if film and len(cinemas) < 1:
-        return get_cinemas_where_film(film)
+        return get_cinemas_where_film(
+            film, settings.CINEMAS_TO_DISPLAY, chat_id
+        )
 
     if film:
         mark_up = InlineKeyboardMarkup(inline_keyboard=[

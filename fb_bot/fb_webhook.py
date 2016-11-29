@@ -146,74 +146,10 @@ class FBWebHookHandler(webapp2.RequestHandler):
         for event in events:
             recipient_id = int(event['sender']['id'])
             if event.get('message') and event['message'].get('attachments'):
-                typing = _typing_payload(recipient_id)
-                _send_payload(typing)
-                payloads = handle_attachments(event)
-                if isinstance(payloads, list):
-                    for payload in payloads:
-                        resp = _send_payload(payload)
-                else:
-                    resp = _send_payload(payloads)
-                self.response.write(resp)
-                return
-
-            if event.get('message') and event['message'].get('quick_reply'):
-                update_last_callback(recipient_id)
-                payload = event['message']['quick_reply']['payload']
-                recipient_id = int(event['sender']['id'])
-                typing = _typing_payload(recipient_id)
-                _send_payload(typing)
-
-                payloads = handle_quick_reply(payload, recipient_id)
-                if isinstance(payloads, list):
-                    for payload in payloads:
-                        resp = _send_payload(payload)
-                else:
-                    resp = _send_payload(payloads)
-                self.response.write(resp)
-                return
-
-            if event.get('postback') and event['postback'].get('payload'):
-                typing = _typing_payload(recipient_id)
-                _send_payload(typing)
-                update_last_callback(recipient_id)
-                back_payload = event['postback']['payload']
-                recipient_id = int(event['sender']['id'])
-                payloads = handle_back_payload(back_payload, recipient_id)
-                if isinstance(payloads, list):
-                    for payload in payloads:
-                        resp = _send_payload(payload)
-                else:
-                    resp = _send_payload(payloads)
-                self.response.write(resp)
-                return
-
-            if event.get('message') and event['message'].get('text'):
-                message = event['message']['text']
-                typing = _typing_payload(recipient_id)
-                _send_payload(typing)
-
-                payload = handle_special_words(recipient_id, message)
-                if payload:
-                    self.response.write(_send_payload(payload))
-                    return
-
-                if settings.uncd(message).find(u'В прокате') != -1:
-                    update_last_callback(recipient_id)
-
-                    payload = display_running_movies(
-                        recipient_id, settings.FB_FILMS_TO_DISPLAY
-                    )
-                    self.response.write(_send_payload(payload))
-                    return
-
-                u_info = get_by_recipient_id(recipient_id)
-                if u_info and u_info.last_callback:
-                    payload = u_info.last_callback
-
-                    payloads = handle_text_with_payload(
-                        u_info, recipient_id, payload,  message
-                    )
+                try:
+                    typing = _typing_payload(recipient_id)
+                    _send_payload(typing)
+                    payloads = handle_attachments(event)
                     if isinstance(payloads, list):
                         for payload in payloads:
                             resp = _send_payload(payload)
@@ -221,11 +157,86 @@ class FBWebHookHandler(webapp2.RequestHandler):
                         resp = _send_payload(payloads)
                     self.response.write(resp)
                     return
-                else:
+                except:
+                    self.response.write('200')
+
+            if event.get('message') and event['message'].get('quick_reply'):
+                try:
+                    update_last_callback(recipient_id)
+                    payload = event['message']['quick_reply']['payload']
+                    recipient_id = int(event['sender']['id'])
                     typing = _typing_payload(recipient_id)
                     _send_payload(typing)
-                    payload = handle_text_message(recipient_id, message)
-                    self.response.write(
-                        _send_payload(payload)
-                    )
+
+                    payloads = handle_quick_reply(payload, recipient_id)
+                    if isinstance(payloads, list):
+                        for payload in payloads:
+                            resp = _send_payload(payload)
+                    else:
+                        resp = _send_payload(payloads)
+                    self.response.write(resp)
                     return
+                except:
+                    self.response.write('200')
+
+            if event.get('postback') and event['postback'].get('payload'):
+                try:
+                    typing = _typing_payload(recipient_id)
+                    _send_payload(typing)
+                    update_last_callback(recipient_id)
+                    back_payload = event['postback']['payload']
+                    recipient_id = int(event['sender']['id'])
+                    payloads = handle_back_payload(back_payload, recipient_id)
+                    if isinstance(payloads, list):
+                        for payload in payloads:
+                            resp = _send_payload(payload)
+                    else:
+                        resp = _send_payload(payloads)
+                    self.response.write(resp)
+                    return
+                except:
+                    self.response.write('200')
+
+            if event.get('message') and event['message'].get('text'):
+                message = event['message']['text']
+                typing = _typing_payload(recipient_id)
+                _send_payload(typing)
+                try:
+                    payload = handle_special_words(recipient_id, message)
+                    if payload:
+                        self.response.write(_send_payload(payload))
+                        return
+
+                    if settings.uncd(message).find(u'В прокате') != -1:
+                        update_last_callback(recipient_id)
+
+                        payload = display_running_movies(
+                            recipient_id, settings.FB_FILMS_TO_DISPLAY
+                        )
+                        self.response.write(_send_payload(payload))
+                        return
+
+                    u_info = get_by_recipient_id(recipient_id)
+                    if u_info and u_info.last_callback:
+                        payload = u_info.last_callback
+
+                        payloads = handle_text_with_payload(
+                            u_info, recipient_id, payload,  message
+                        )
+                        if isinstance(payloads, list):
+                            for payload in payloads:
+                                resp = _send_payload(payload)
+                        else:
+                            resp = _send_payload(payloads)
+                        self.response.write(resp)
+                        return
+                    else:
+                        typing = _typing_payload(recipient_id)
+                        _send_payload(typing)
+                        payload = handle_text_message(recipient_id, message)
+                        self.response.write(
+                            _send_payload(payload)
+                        )
+                        return
+                except:
+                    self.response.write('200')

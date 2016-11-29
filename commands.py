@@ -1,5 +1,5 @@
 # coding: utf-8
-
+import json
 import urllib
 import requests
 
@@ -11,6 +11,7 @@ from telepot.namedtuple import InlineKeyboardMarkup
 from google.appengine.ext import deferred
 from validate_email import validate_email
 
+from data import detect_city_id_by_location
 from draw import draw_cinemahall
 
 from screen.seances import display_seances_part
@@ -289,8 +290,13 @@ def callback_seance_text(tuid, bot, chat_id, text, cmd, profile):
         bot.sendMessage(chat_id, settings.NO_FILM_SEANCE)
         return
 
+    city_id = 1
     cmd = cmd.encode('utf-8')
-    parser = Parser(request=cmd, state='cinema')
+    u = get_model(UserProfile, chat_id)
+    if u and u.location:
+        l = json.loads(u.location)
+        city_id = detect_city_id_by_location(l)
+    parser = Parser(request=cmd, state='cinema', city_id=city_id)
     parser.parse()
 
     bot.sendChatAction(chat_id, action='typing')
@@ -314,7 +320,10 @@ def callback_seance_text(tuid, bot, chat_id, text, cmd, profile):
 
     if len(seances) < 1:
         bot.sendMessage(chat_id, settings.NO_FILM_SEANCE)
-        send_reply(bot, chat_id, get_cinemas_where_film, film)
+        send_reply(
+            bot, chat_id, get_cinemas_where_film, film,
+            settings.CINEMAS_TO_DISPLAY, chat_id
+        )
         return
 
     template = settings.JINJA_ENVIRONMENT.get_template('cinema_where_film.md')

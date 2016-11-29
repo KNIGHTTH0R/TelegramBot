@@ -1,12 +1,23 @@
 # coding: utf-8
+import contextlib
+import json
+import urllib2
 
 from telepot.namedtuple import InlineKeyboardMarkup
 
 import settings
+from data import detect_city_id_by_location
+from model.base import get_model, UserProfile
 
 
 def cinemas_where_film(film, number_to_display=None,
-                       to_show=settings.CINEMAS_TO_DISPLAY):
+                       to_show=settings.CINEMAS_TO_DISPLAY,
+                       chat_id=None):
+    city_id = 1
+    if chat_id:
+        u = get_model(UserProfile, chat_id)
+        l = json.loads(u.location)
+        city_id = detect_city_id_by_location(l)
 
     cinemas = []
     for i, p in enumerate(film.cinemas):
@@ -15,6 +26,9 @@ def cinemas_where_film(film, number_to_display=None,
             continue
 
         cinema = p.get()
+        if cinema.city != city_id:
+            continue
+
         cinemas.append(
             settings.RowCinema(
                 cinema.shortTitle,
@@ -31,12 +45,14 @@ def cinemas_where_film(film, number_to_display=None,
 
 
 def get_cinemas_where_film(film,
-                           number_to_display=settings.CINEMAS_TO_DISPLAY):
+                           number_to_display=settings.CINEMAS_TO_DISPLAY,
+                           chat_id=None):
 
-    cinemas = cinemas_where_film(film, number_to_display=number_to_display)
+    cinemas = cinemas_where_film(
+        film, number_to_display=number_to_display, chat_id=chat_id
+    )
 
     if len(cinemas) < 1:
-        # do some
         return settings.FILM_NO_CINEMA, None
 
     template = settings.JINJA_ENVIRONMENT.get_template(

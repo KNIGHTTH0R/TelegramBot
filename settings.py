@@ -67,6 +67,7 @@ URL_RUNNING_MOVIES = 'https://api.kinohod.ru/api/data/2/{}/running.json.gz'
 URL_MOVIES_INFO = 'https://kinohod.ru/api/rest/partner/v1/movies/{}?apikey={}'
 URL_SEANCES = 'https://kinohod.ru/api/rest/partner/v1/movies/{}/schedules?apikey={}&rangeStart={}&limit={}'
 URL_FULL_SEANCES = 'https://kinohod.ru/api/rest/partner/v1/movies/{}/schedules?apikey={}&date={}'
+URL_FULL_SEANCES_CITY = 'https://kinohod.ru/api/rest/partner/v1/movies/{}/schedules?apikey={}&date={}&city={}'
 URL_CINEMA_SEANCES = 'https://kinohod.ru/api/rest/partner/v1/cinemas/{}/schedules?apikey={}&limit=10&date={}'
 URL_CINEMA_MOVIE = 'https://kinohod.ru/api/rest/partner/v1/cinemas/{}/schedules?apikey={}'
 URL_CINEMA_MOVIE_DATE = 'https://kinohod.ru/api/rest/partner/v1/cinemas/{}/schedules?date={}&apikey={}'
@@ -77,7 +78,9 @@ URL_CANCEL_TICKET = 'https://kinohod.ru/cancel/{}'
 URL_BASE_O = 'https://kinohod.ru/o/'
 URL_BASE_P = 'https://kinohod.ru/p/200x300/'
 URL_WIDGET_CINEMAS = 'http://kinohod.ru/widget/cinemas'
+URL_CITIES = 'https://kinohod.ru/api/rest/partner/v1/cities/'
 BASE_KINOHOD = 'https://kinohod.ru'
+URL_CITY_ID_BY_LOC = '{}?apikey={}&latitude={}&longitude={}&sort=distance'
 
 FILMS_TO_DISPLAY = 10
 FB_FILMS_TO_DISPLAY = 5

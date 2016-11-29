@@ -1,14 +1,16 @@
 # coding: utf-8
-
+import json
 import re
 import itertools
 
 from datetime import datetime, timedelta
 
+from fb_bot.helper_methods import get_by_recipient_id
 from mapping import (stop_words, when_nearest, when_week,
                      when_month, genre_mapping)
 
 from maching import damerau_levenshtein_distance
+from model.base import get_model, UserProfile
 from model.search import ModelSearch
 from model.film import Genre, Film, set_film_model, Actor, Producer, Director
 from parse_data import Data
@@ -20,7 +22,7 @@ from settings import MORPH, de_uncd
 
 
 class Parser(object):
-    def __init__(self, request, state):
+    def __init__(self, request, state, city_id=1):
 
         self.data = Data(place=None, what=None, when=None,
                          genre=None, actors=None)
@@ -39,6 +41,8 @@ class Parser(object):
 
         self.state = state
         self.text = request
+
+        self.city_id = city_id
 
         self.__ids_inside = []
 
@@ -178,6 +182,7 @@ class Parser(object):
         self.data.place = ModelSearch.query_cinema(
             self.splitted,
             need_pre=False,
+            city=self.city_id,
             limit=limit
         )
 

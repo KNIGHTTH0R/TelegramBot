@@ -2,6 +2,7 @@
 import json
 from datetime import datetime, timedelta
 import settings
+from data import detect_city_id_by_location
 from fb_bot.cinema_seances import get_data
 from fb_bot.fb_api_wrapper import construct_message_with_attachment
 from fb_bot.fb_api_wrapper import construct_message_with_text
@@ -196,8 +197,10 @@ def display_nearest_cinemas(recipient_id, number,
             settings.KINOHOD_API_KEY
         )
     else:
-        url = settings.URL_CINEMAS_GEO.format(
-            settings.KINOHOD_API_KEY, lat, lng
+        l = {'latitude': lat, 'longitude': lng}
+        city_id = detect_city_id_by_location(l)
+        url = (settings.URL_CINEMAS_GEO + '&city={}').format(
+            settings.KINOHOD_API_KEY, lat, lng, city_id
         )
 
     html_data = get_data(url)

@@ -49,16 +49,18 @@ def set_film_models():
 
 
 def update_film_table(index_name='films'):
+
     films, places = get_data('film')
 
     for k, f in films.iteritems():
 
         o = Film.get_by_id(f.get('id'))
+        film_id = int(f.get('id'))
+
+        # this is too long operation
+        schedules = get_schedule(film_id)
 
         if not o:
-            film_id = f.get('id')
-
-            schedules = get_schedule(film_id)
             o = set_film_model(f, schedules)
 
             ModelSearch.add_document(
@@ -71,7 +73,6 @@ def update_film_table(index_name='films'):
 
 class UpdateBFilmView(webapp2.RedirectHandler):
     def get(self, *args, **kwargs):
-        # set_film_models
         deferred.defer(update_film_table, )
 
 

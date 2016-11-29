@@ -1,8 +1,10 @@
 # coding: utf8
-
+import json
 from datetime import datetime, timedelta
 from collections import namedtuple
 
+from data import detect_city_id_by_location
+from model.base import get_model, UserProfile
 from screen.cinema_seances import detect_cinema_seances
 from screen.movie_info import display_movie_info
 from screen.running_movies import get_cinema_movies
@@ -36,7 +38,7 @@ def process_what(bot, chat_id, tuid, whats, next_url='/seance'):
                         parse_mode='Markdown')
 
 
-def display_afisha(request, bot, chat_id, tuid):
+def display_afisha(request, bot, chat_id, tuid, city_id):
 
     def film_iteraction(category_name, data):
         flag = False
@@ -109,7 +111,7 @@ def display_afisha(request, bot, chat_id, tuid):
         return False
 
     bot.sendChatAction(chat_id, action='typing')
-    parser = Parser(request=request, state='base')
+    parser = Parser(request=request, state='base', city_id=city_id)
     parser.parse()
 
     if film_iteraction('what', parser.data):

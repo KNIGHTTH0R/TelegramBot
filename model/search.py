@@ -154,7 +154,13 @@ class ModelSearch(object):
         return _pre
 
     @staticmethod
-    def query_cinema(text, need_pre=True, limit=settings.CINEMA_TO_SHOW):
+    def query_cinema(text, need_pre=True, city=1,
+                     limit=settings.CINEMA_TO_SHOW):
+
+        def prepare_fs(fields):
+            return ' OR '.join(
+                map(lambda x: str(x) + ': ({0})', fields)
+            )
 
         index = search.Index('cinemas')
 
@@ -170,24 +176,22 @@ class ModelSearch(object):
             return None
 
         _text = '~{}'.format(' OR ~'.join(_pre))
-
-        query_s = 'metro: ({}) OR address: ({}) OR shortTitle: ({}) OR mall: ({})'.format(
-            _text, _text, _text, _text
-        )
+        texts_search = prepare_fs(['metro', 'address', 'shortTitle', 'mall'])
+        condition_text = 'city: ({1})'
+        query_text = '({}) AND ({})'.format(texts_search, condition_text)
+        query_s = query_text.format(_text, city)
 
         query_options = search.QueryOptions(limit=limit)
-
         try:
             query = search.Query(query_string=query_s, options=query_options)
         except search.Error:
-            return
-        except search.QueryError:
             return
         except Exception:
             return
 
         try:
             results = index.search(query)
+
             r = filter(lambda x: x, [ndb.Key(urlsafe=scored_d.doc_id).get()
                                      for scored_d in results])
             return r if r else None

@@ -72,12 +72,21 @@ def process_movies(data, number_of_movies, callback_url, date,
     more_date = now_str if now.date() == date.date() else tomorrow_str
 
     expanded_info = False
-    for film_counter in xrange(number_of_movies - to_show,
-                               number_of_movies):
+    if number_of_movies - to_show > len(data):
+        left_border = 0
+        right_border = len(data)
+    else:
+        left_border = number_of_movies - to_show
+        right_border = number_of_movies
+
+    for film_counter in xrange(left_border,
+                               right_border):
 
         if film_counter < len(data):
             movie = data[film_counter]
+
         else:
+
             return (settings.NO_FILMS,
                     _process_movies_markup(settings.FIRST_TEN, callback_url, 0,
                                            more_date, markup_tomorrow_text,

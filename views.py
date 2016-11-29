@@ -24,11 +24,12 @@ from commands import (display_nearest, display_seance, send_reply,
                       display_movie_nearest_cinemas, display_full_info,
                       display_cinemas_where_film)
 
-from view_processing import detect_premiers
+from data import detect_city_id_by_location
 from screen.support import send_mail_story, start_markup, support_generation
 from screen.cinemas import get_nearest_cinemas
 from model.base import UserProfile
 from model.base import set_model, get_model
+from view_processing import detect_premiers
 from view_processing import display_afisha
 
 
@@ -186,6 +187,12 @@ class CommandReceiveView(webapp2.RequestHandler):
             if not func_detected_flag:
                 Schema = namedtuple('Schema', ['reply', 'markup'])
 
+                city_id = 1
+                u = get_model(UserProfile, chat_id)
+                if u and u.location:
+                    l = json.loads(u.location)
+                    city_id = detect_city_id_by_location(l)
+
                 s = {
                     'base': Schema(display_afisha, start_markup),
                     # 'films': Schema(display_films, start_markup),
@@ -205,7 +212,7 @@ class CommandReceiveView(webapp2.RequestHandler):
                           name=detect_premiers.__name__)
 
                 elif s[profile_state].reply(cmd.encode('utf-8'),
-                                            bot, chat_id, tuid):
+                                            bot, chat_id, tuid, city_id):
                     track(tuid=tuid,
                           message=format(s[profile_state].reply.__name__),
                           name='parsing')
