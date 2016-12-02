@@ -26,7 +26,7 @@ from google.appengine.ext import deferred, ndb
 from fb_bot.fb_webhook import FBWebHookHandler
 from views import CommandReceiveView
 from model.search import ModelSearch, create_film_documents
-from data import get_data, get_schedule
+from data import get_data
 from processing.maching import damerau_levenshtein_distance
 from model.cinema import Cinema, set_cinema_model
 from model.film import (Film, Genre, set_film_model,
@@ -41,13 +41,6 @@ def set_cinema_models():
         set_cinema_model(p)
 
 
-def set_film_models():
-    films, places = get_data('film')
-    for k, f in films.iteritems():
-        schedules = get_schedule(f.get('id'))
-        set_film_model(f, schedules)
-
-
 def update_film_table(index_name='films'):
 
     films, places = get_data('film')
@@ -55,13 +48,9 @@ def update_film_table(index_name='films'):
     for k, f in films.iteritems():
 
         o = Film.get_by_id(f.get('id'))
-        film_id = int(f.get('id'))
-
-        # this is too long operation
-        schedules = get_schedule(film_id)
 
         if not o:
-            o = set_film_model(f, schedules)
+            o = set_film_model(f)
 
             ModelSearch.add_document(
                 ModelSearch.create_film_document(
