@@ -4,7 +4,6 @@ from datetime import datetime
 
 from google.appengine.ext import ndb
 
-from cinema import Cinema
 from base import set_model, _t
 
 
@@ -140,10 +139,9 @@ class Film(ndb.Model):
     premiereDateRussia = ndb.DateTimeProperty()
     countComments = ndb.IntegerProperty()
     distributorId = ndb.IntegerProperty()
-    cinemas = ndb.KeyProperty(kind='Cinema', repeated=True)
 
 
-def set_film_model(f, schedules):
+def set_film_model(f):
     poster_landscape = f.get('posterLandscape')
     _producers = f.get('producers')
     _genres = f.get('genres')
@@ -263,16 +261,6 @@ def set_film_model(f, schedules):
 
                 trailer_keys.append(o.key)
 
-    cinemas = None
-    if schedules:
-        cinemas = []
-        for s in schedules:
-            c_json = s.get('cinema')
-            if c_json:
-                c_o = Cinema.get_by_id(str(c_json.get('id')))
-                if c_o:
-                    cinemas.append(c_o.key)
-
     curr_f = set_model(
         cls=Film,
 
@@ -339,7 +327,6 @@ def set_film_model(f, schedules):
 
         countComments=_t(f, 'countComments', int),
         distributorId=_t(f, 'distributorId', int),
-        cinemas=cinemas
     )
 
     return curr_f
