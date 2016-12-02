@@ -1,10 +1,8 @@
 # coding: utf8
-import json
+
 from datetime import datetime, timedelta
 from collections import namedtuple
 
-from data import detect_city_id_by_location
-from model.base import get_model, UserProfile
 from screen.cinema_seances import detect_cinema_seances
 from screen.movie_info import display_movie_info
 from screen.running_movies import get_cinema_movies
@@ -12,6 +10,7 @@ from screen.cinemas import cinemas_from_data
 from processing.parser import Parser
 
 from commands import send_reply, display_movies
+from data import get_schedule
 
 import settings
 
@@ -50,7 +49,15 @@ def display_afisha(request, bot, chat_id, tuid, city_id):
             now = datetime.now()
             new_category = []
             for f in category:
-                if len(f.cinemas) > 0:
+
+                f_cinemas = get_schedule(
+                    int(f.kinohod_id), date=now, city_id=int(city_id)
+                )
+
+                if f_cinemas is None:
+                    continue
+
+                if len(f_cinemas) > 0:
                     new_category.append(f)
 
                 elif (f.premiereDateRussia and
@@ -76,7 +83,14 @@ def display_afisha(request, bot, chat_id, tuid, city_id):
                     if w.premiereDateRussia and w.premiereDateRussia > time:
                         continue
 
-                    if p.key not in w.cinemas and w.premiereDateRussia < now:
+                    w_cinemas = get_schedule(
+                        int(w.kinohod_id), date=time, city_id=int(city_id)
+                    )
+
+                    w_cinemas_ids = [k['cinema']['id'] for k in w_cinemas]
+                    if (p.kinohod_id not in w_cinemas_ids and
+                            w.premiereDateRussia < now):
+
                         if p.shortTitle not in no_display:
                             no_display[p.shortTitle] = [(w, p)]
                         else:

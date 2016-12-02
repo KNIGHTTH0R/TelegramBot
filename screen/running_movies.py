@@ -14,6 +14,7 @@ from telepot.namedtuple import InlineKeyboardMarkup
 from google.appengine.ext import ndb
 
 from model.film import Film
+from data import get_schedule
 
 import settings
 
@@ -39,7 +40,7 @@ def _process_movies_markup(text_more, callback_url,
     ])
 
 
-def process_movies(data, number_of_movies, callback_url, date,
+def process_movies(data, number_of_movies, callback_url, date, city_id,
                    next_url='/info', **kwargs):
 
     cinema_id = kwargs.get('cinema_id')
@@ -47,7 +48,6 @@ def process_movies(data, number_of_movies, callback_url, date,
     next_info_url = kwargs.get('info_url')
     title = kwargs.get('title')
 
-    date = datetime.strptime(date, '%d%m%Y')
     now = datetime.now()
 
     videos, premiers = [], []
@@ -97,8 +97,10 @@ def process_movies(data, number_of_movies, callback_url, date,
         # film = Film.get_by_id(movie['id'])
         two_weeks = timedelta(days=14)
 
+        film_cinemas = get_schedule(movie['id'], date, city_id)
+
         if (film and
-            (len(film.cinemas) < 1 and not
+            (len(film_cinemas) < 1 and not
              ((film.premiereDateRussia and
                (now < film.premiereDateRussia < (now + two_weeks))) or
               (film.premiereDateWorld and
@@ -164,27 +166,28 @@ def process_movies(data, number_of_movies, callback_url, date,
     return msg, mark_up
 
 
-def display_running_movies_api(number_of_movies):
+def display_running_movies_api(number_of_movies, city_id):
     url = settings.URL_RUNNING_MOVIES.format(settings.KINOHOD_API_KEY)
     with contextlib.closing(urllib2.urlopen(url)) as jf:
         m_stream = gzip.GzipFile(fileobj=StringIO(jf.read()), mode='rb')
         data = json.loads(m_stream.read())
 
     callback_url = '/movies{}'
-    date = datetime.now().strftime(format='%d%m%Y')
-    return process_movies(data, number_of_movies, callback_url, date)
+    date = datetime.now()
+    return process_movies(data, number_of_movies, callback_url, date, city_id)
 
 
-def display_soon_films(number_of_movies):
+def display_soon_films(number_of_movies, city_id):
     return display_films(
         number_of_movies,
         url=settings.URL_SOON_MOVIES.format(settings.KINOHOD_API_KEY),
-        callback_url='/movies{}ts'
+        callback_url='/movies{}ts',
+        city_id=city_id
     )
 
 
-def display_running_now_films(number_of_movies):
-    return display_running_movies_api(number_of_movies)
+def display_running_now_films(number_of_movies, city_id):
+    return display_running_movies_api(number_of_movies, city_id)
     # display_films(
     #     number_of_movies,
     #     url=settings.URL_RUNNING_NOW_MOVIES.format(settings.KINOHOD_API_KEY),
@@ -192,13 +195,13 @@ def display_running_now_films(number_of_movies):
     # )
 
 
-def display_films(number_of_movies, url, callback_url):
+def display_films(number_of_movies, url, callback_url, city_id):
     with contextlib.closing(urllib2.urlopen(url)) as jf:
         data = json.loads(jf.read())
 
     callback_url = callback_url
-    date = datetime.now().strftime(format='%d%m%Y')
-    return process_movies(data, number_of_movies, callback_url, date)
+    date = datetime.now()
+    return process_movies(data, number_of_movies, callback_url, date, city_id)
 
 
 def process_movies_db(number_of_movies, callback_url,
@@ -275,7 +278,8 @@ def display_running_movies(number_of_movies):
     return process_movies_db(number_of_movies, callback_url)
 
 
-def get_cinema_movies(cinema_id, number_of_movies, date, title=None):
+def get_cinema_movies(cinema_id, number_of_movies, date,
+                      title=None, city_id=1):
 
     url = settings.URL_CINEMA_MOVIE_DATE.format(
         cinema_id,
@@ -290,9 +294,12 @@ def get_cinema_movies(cinema_id, number_of_movies, date, title=None):
         return settings.DONT_UNDERSTAND
 
     data = [d['movie'] for d in data]
+
     callback_url = '/show' + str(cinema_id) + 'v{}' + 'in{}'
 
-    return process_movies(data, number_of_movies, callback_url, date,
+    return process_movies(data, number_of_movies, callback_url,
+                          datetime.strptime(date, '%d%m%Y'),
+                          city_id,
                           next_url='/c', info_url='/info',
                           title=title,
                           cinema_id=cinema_id, separator='m')

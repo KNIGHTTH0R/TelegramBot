@@ -8,7 +8,10 @@ from telepot.namedtuple import InlineKeyboardMarkup
 from datetime import datetime
 from model.base import get_model
 from model.base import UserProfile
+from model.cinema import Cinema
 from model.film import Film
+
+from personolized_data import detect_film_cinemas
 
 import settings
 
@@ -46,11 +49,13 @@ def get_seances(chat_id, movie_id, number_of_seances,
     u = get_model(UserProfile, chat_id)
 
     f = Film.get_by_id(str(movie_id))
-    if f and not f.cinemas:
+
+    f_cinemas, city_id = detect_film_cinemas(chat_id, movie_id, date=date)
+
+    if f and not f_cinemas:
         return settings.NO_FILM_SEANCE
 
-    cinemas = [k.get() for k in f.cinemas]
-    cinema_ids = [c.kinohod_id for c in cinemas]
+    cinema_ids = [k['cinema']['id'] for k in f_cinemas]
 
     if u:
         l = json.loads(u.location)
@@ -149,7 +154,7 @@ def get_seances(chat_id, movie_id, number_of_seances,
     }), mark_up
 
 
-def display_seances_part(text, movie_id, number_of_seances,
+def display_seances_part(chat_id, text, movie_id, number_of_seances,
                          date=datetime.now().strftime('%d%m%Y')):
 
     url = settings.URL_FULL_SEANCES.format(
@@ -159,11 +164,13 @@ def display_seances_part(text, movie_id, number_of_seances,
     seances = []
 
     f = Film.get_by_id(str(movie_id))
-    if f and not f.cinemas:
+
+    f_cinemas, city_id = detect_film_cinemas(chat_id, movie_id, date=date)
+
+    if f and not f_cinemas:
         return settings.NO_FILM_SEANCE
 
-    cinemas = [k.get() for k in f.cinemas]
-    cinema_ids = [c.kinohod_id for c in cinemas]
+    cinema_ids = [k['cinema']['id'] for k in f_cinemas]
 
     html_data = get_data(url)
 

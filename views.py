@@ -24,7 +24,7 @@ from commands import (display_nearest, display_seance, send_reply,
                       display_movie_nearest_cinemas, display_full_info,
                       display_cinemas_where_film)
 
-from data import detect_city_id_by_location
+from personolized_data import detect_city_by_chat
 from screen.support import send_mail_story, start_markup, support_generation
 from screen.cinemas import get_nearest_cinemas
 from model.base import UserProfile
@@ -156,78 +156,75 @@ class CommandReceiveView(webapp2.RequestHandler):
         elif cmd is None:
             return
 
-        try:
-            profile = get_model(UserProfile, chat_id)
-            cmd = cmd.lower()
-            func_detected_flag = False
+        # try:
+        profile = get_model(UserProfile, chat_id)
+        cmd = cmd.lower()
+        func_detected_flag = False
+        support_send = [
+            settings.NO_AGAIN.decode('utf-8').lower(),
+            settings.NO_MAIL_SENDED.decode('utf-8').lower(),
+            settings.ANOTHER_PAY_ER.decode('utf-8').lower()
+        ]
 
-            support_send = [
-                settings.NO_AGAIN.decode('utf-8').lower(),
-                settings.NO_MAIL_SENDED.decode('utf-8').lower(),
-                settings.ANOTHER_PAY_ER.decode('utf-8').lower()
-            ]
+        if (cmd.startswith('/') or
+                (profile and profile.cmd and
+                 (profile.cmd.startswith('/') or
+                  (profile.cmd in support_send)))):
 
-            if (cmd.startswith('/') or
-                    (profile and profile.cmd and
-                     (profile.cmd.startswith('/') or
-                      (profile.cmd in support_send)))):
+            func = detect_instruction(instructions, cmd)
+            if func:
+                func(bot, payload, cmd, chat_id)
+                func_detected_flag = True
+                track(tuid, '{} called'.format(func.__name__), func.__name__)
 
-                func = detect_instruction(instructions, cmd)
-                if func:
-                    func(bot, payload, cmd, chat_id)
+            else:
+                cb_fn = detect_cb(callback_instruction(), profile)
+                if cb_fn:
                     func_detected_flag = True
-                    track(tuid, '{} called'.format(func.__name__), func.__name__)
+                    cb_fn(tuid, bot, chat_id, profile.cmd, cmd, profile)
 
-                else:
-                    cb_fn = detect_cb(callback_instruction(), profile)
-                    if cb_fn:
-                        func_detected_flag = True
-                        cb_fn(tuid, bot, chat_id, profile.cmd, cmd, profile)
+        if not func_detected_flag:
+            Schema = namedtuple('Schema', ['reply', 'markup'])
+            city_id = detect_city_by_chat(chat_id)
 
-            if not func_detected_flag:
-                Schema = namedtuple('Schema', ['reply', 'markup'])
+            s = {
+                'base': Schema(display_afisha, start_markup),
+                # 'films': Schema(display_films, start_markup),
+                # 'cinema': Schema(display_cinemas, start_markup)
+            }
+            profile_state = 'base'
 
-                city_id = 1
-                u = get_model(UserProfile, chat_id)
-                if u and u.location:
-                    l = json.loads(u.location)
-                    city_id = detect_city_id_by_location(l)
 
-                s = {
-                    'base': Schema(display_afisha, start_markup),
-                    # 'films': Schema(display_films, start_markup),
-                    # 'cinema': Schema(display_cinemas, start_markup)
-                }
+            if support_generation(cmd, bot, chat_id, message_id):
+                track(tuid=tuid,
+                      message=format(s[profile_state].reply.__name__),
+                      name='support')
 
-                profile_state = 'base'
+            elif detect_premiers(cmd.encode('utf-8'), bot, payload, chat_id):
+                track(tuid=tuid,
+                      message=cmd.encode('utf-8'),
+                      name=detect_premiers.__name__)
 
-                if support_generation(cmd, bot, chat_id, message_id):
-                    track(tuid=tuid,
-                          message=format(s[profile_state].reply.__name__),
-                          name='support')
+            elif s[profile_state].reply(cmd.encode('utf-8'),
+                                        bot, chat_id, tuid, city_id):
+                track(tuid=tuid,
+                      message=format(s[profile_state].reply.__name__),
+                      name='parsing')
 
-                elif detect_premiers(cmd.encode('utf-8'), bot, payload, chat_id):
-                    track(tuid=tuid,
-                          message=cmd.encode('utf-8'),
-                          name=detect_premiers.__name__)
+            else:
+                if not is_group:
 
-                elif s[profile_state].reply(cmd.encode('utf-8'),
-                                            bot, chat_id, tuid, city_id):
-                    track(tuid=tuid,
-                          message=format(s[profile_state].reply.__name__),
-                          name='parsing')
+                    bot.sendMessage(
+                        chat_id,
+                        settings.DONT_UNDERSTAND,
+                        parse_mode='Markdown',
+                        reply_markup=s[profile_state].markup()
+                    )
 
-                else:
-                    if not is_group:
-                        bot.sendMessage(
-                            chat_id, settings.DONT_UNDERSTAND,
-                            parse_mode='Markdown',
-                            reply_markup=s[profile_state].markup())
-                        track(tuid, 'miss understanding', 'invalid')
+                    track(tuid, 'miss understanding', 'invalid')
 
-            deferred.defer(set_model, UserProfile, chat_id,
-                           cmd=cmd, chat_id=int(chat_id))
-
-        except Exception as ex:
-            return
+        deferred.defer(set_model, UserProfile, chat_id,
+                       cmd=cmd, chat_id=int(chat_id))
+        # except Exception as ex:
+        #    return
         # raise endpoints.BadRequestException(ex.message)

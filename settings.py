@@ -48,7 +48,7 @@ JINJA_ENVIRONMENT = jinja2.Environment(
 TIMEZONE = 2
 bot_username = 'KinohodBot'
 KINOHOD_API_KEY = 'f056d104-abcd-3ab7-9132-cfcf3a098bc4'
-TELEGRAM_BOT_TOKEN = '209622038:AAGuPWWiLqXXAZlEcfh6tC85DKtHslVUJdA'  # production
+TELEGRAM_BOT_TOKEN = '304446172:AAG02ML2nI4mrE0AgXPTmtq4uixYTj7DKHw'  # production
 # TELEGRAM_BOT_TOKEN = '220697123:AAGHvA89SQ3qVCXyafTB9GObKa7E1f9xRrs'
 BOTAN_TOKEN = 'DXKQu6IQbjGwX7HSdLP1OCNHMkOoX0ak'  # production
 # BOTAN_TOKEN = 'ip2CSBT89XNqLbzAjcaF4vw6Iyc9LJIx'
@@ -262,6 +262,14 @@ premier_mapping = {
               'сегодня в кино', 'сегодня вечером', 'посмотреть в кино',
               'что посмотреть', 'что идёт сегодня', 'что в кино']
 }
+
+
+cities = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
+          20, 21, 22, 23, 24, 25, 26, 28, 29, 30, 31, 32, 33, 34, 35, 37, 38,
+          39, 40, 41, 42, 44, 47, 48, 49, 50, 51, 52, 56, 57, 58, 59, 60, 62,
+          63, 65, 66, 67, 68, 76, 77, 79, 83, 84, 85, 88, 89, 90, 91, 97, 98,
+          103, 117, 118, 122, 123, 124, 128, 129, 132, 140, 158]
+
 
 
 

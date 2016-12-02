@@ -7,7 +7,8 @@ import urllib2
 import json
 
 from cinema_where_film import get_cinemas_where_film
-from data import detect_city_id_by_location
+from personolized_data import detect_city_id_by_location
+from data import get_schedule
 
 from model.base import get_model
 from model.base import UserProfile
@@ -70,9 +71,15 @@ def get_nearest_cinemas(bot, chat_id, number_of_cinemas,
 
         cinema_id = str(cinema.get('id'))
         cinema_title = cinema.get('shortTitle')
+
+        # poor place because of long request
+        film_cinemas = get_schedule(movie_id, date=None, city_id=city_id)
+
+        # poor place because of double getter
+        film_cinema_ids = [fc['cinema']['id'] for fc in film_cinemas]
+
         if film and cinema_id:
-            # TODO: REWRITE IT IN FREE TIME
-            if ndb.Key('Cinema', cinema_id) not in film.cinemas:
+            if cinema_id not in film_cinema_ids:
                 continue
 
             link = '{}{}m{}'.format(next_url, cinema_id, movie_id)

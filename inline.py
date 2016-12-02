@@ -8,6 +8,7 @@ from telebot import types
 
 from screen.movie_info import display_movie_info
 from processing.parser import Parser
+from personolized_data import detect_film_cinemas
 
 import settings
 
@@ -83,16 +84,7 @@ def query_text(query):
             now = datetime.now()
             new_category = []
             for f in category:
-                if len(f.cinemas) > 0:
-                    new_category.append(f)
-
-                elif (f.premiereDateRussia and
-                      now < f.premiereDateRussia < (now + two_weeks)):
-                    new_category.append(f)
-
-                elif (f.premiereDateWorld and
-                      now < f.premiereDateWorld < (now + two_weeks)):
-                    new_category.append(f)
+                new_category.append(f)
 
             category = new_category
 

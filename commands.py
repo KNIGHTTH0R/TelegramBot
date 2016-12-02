@@ -11,7 +11,8 @@ from telepot.namedtuple import InlineKeyboardMarkup
 from google.appengine.ext import deferred
 from validate_email import validate_email
 
-from data import detect_city_id_by_location
+from personolized_data import detect_city_by_chat, detect_film_cinemas
+
 from draw import draw_cinemahall
 
 from screen.seances import display_seances_part
@@ -166,6 +167,8 @@ def display_movie_nearest_cinemas(tuid, bot, chat_id, text, cmd, profile):
 def display_cinema(bot, payload, cmd, chat_id):
     bot.sendChatAction(chat_id, action='typing')
 
+    city_id = detect_city_by_chat(chat_id)
+
     if 'in' in cmd:
         in_index = cmd.index('in')
         date = cmd[in_index + 2:]
@@ -178,12 +181,12 @@ def display_cinema(bot, payload, cmd, chat_id):
         cinema_id = int(cmd[len('/show'): index_of_v])
         number_to_display = int(cmd[index_of_v + 1:])
         send_reply(bot, chat_id, get_cinema_movies,
-                   cinema_id, number_to_display, date,
+                   cinema_id, number_to_display, date, None, city_id,
                    success=int(payload['callback_query']['id']))
     else:
         cinema_id = int(cmd[len('/show'):])
         send_reply(bot, chat_id, get_cinema_movies, cinema_id,
-                   settings.FILMS_TO_DISPLAY, date)
+                   settings.FILMS_TO_DISPLAY, date, None, city_id)
 
 
 def display_movies(bot, payload, cmd, chat_id):
@@ -195,6 +198,7 @@ def display_movies(bot, payload, cmd, chat_id):
         movie_t = cmd[index_t + 1:]
         cmd = cmd[:index_t]
 
+    city_id = detect_city_by_chat(chat_id)
     func = display_running_movies_api
     if movie_t:
         if movie_t == 's':
@@ -207,10 +211,11 @@ def display_movies(bot, payload, cmd, chat_id):
         # display_running_movies
         send_reply(bot, chat_id, func,
                    number_to_display,
+                   city_id,
                    success=int(payload['callback_query']['id']))
     else:
         # display_running_movies
-        send_reply(bot, chat_id, func, settings.FILMS_TO_DISPLAY)
+        send_reply(bot, chat_id, func, settings.FILMS_TO_DISPLAY, city_id)
 
 
 def films_category(bot, payload, cmd, chat_id):
@@ -286,16 +291,15 @@ def callback_seance_text(tuid, bot, chat_id, text, cmd, profile):
 
     film = Film.get_by_id(movie_id)
 
-    if not film.cinemas or len(film.cinemas) < 1:
+    cmd = cmd.encode('utf-8')
+
+    # poor place of the code - every time new request to kinohod db
+    film_cinemas, city_id = detect_film_cinemas(chat_id, movie_id, date=None)
+
+    if not film_cinemas or len(film_cinemas) < 1:
         bot.sendMessage(chat_id, settings.NO_FILM_SEANCE)
         return
 
-    city_id = 1
-    cmd = cmd.encode('utf-8')
-    u = get_model(UserProfile, chat_id)
-    if u and u.location:
-        l = json.loads(u.location)
-        city_id = detect_city_id_by_location(l)
     parser = Parser(request=cmd, state='cinema', city_id=city_id)
     parser.parse()
 
@@ -308,7 +312,7 @@ def callback_seance_text(tuid, bot, chat_id, text, cmd, profile):
         # bot.sendMessage(chat_id, settings.CINEMA_NOT_FOUND)
     else:
         for p in parser.data.place:
-            if not p or p.key not in film.cinemas:
+            if not p or p.key not in film_cinemas:
                 continue
 
             seances.append(
@@ -429,7 +433,10 @@ def display_info(bot, payload, cmd, chat_id, full=False,
     if not film:
         return bot.sendMessage(chat_id, settings.DONT_UNDERSTAND)
 
-    if (len(film.cinemas) < 1 and
+    # poor place of whole code
+    film_cinemas, city_id = detect_film_cinemas(chat_id, movie_id, date=None)
+
+    if (len(film_cinemas) < 1 and
         not ((film.premiereDateRussia and
               (now < film.premiereDateRussia < (now + two_weeks))) or
              (film.premiereDateWorld and
@@ -481,7 +488,8 @@ def callback_seance(tuid, bot, chat_id, text, cmd, profile):
     i_n, l_n = profile.cmd.index('num'), len('num')
     movie_id = profile.cmd[7: i_n]
     number_of_seances = profile.cmd[i_n + l_n: len(profile.cmd)]
-    response = display_seances_part(cmd, movie_id, int(number_of_seances))
+    response = display_seances_part(chat_id, cmd, movie_id,
+                                    int(number_of_seances))
     if response is not None:
         bot.sendMessage(chat_id, response)
 

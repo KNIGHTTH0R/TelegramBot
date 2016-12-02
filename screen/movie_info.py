@@ -55,9 +55,13 @@ def display_movie_info(movie_id, telegram_user_id=None,
     if film.trailers and len(film.trailers) > 0:
 
         trailer = film.trailers[0].get()
-        video_hash = trailer.videos[0].filename
 
-        trailer_url = _get_movie_trailer_link(video_hash)
+        if trailer is not None:
+            video_hash = trailer.videos[0].filename
+            trailer_url = _get_movie_trailer_link(video_hash)
+        else:
+            trailer_url = settings.BASE_KINOHOD
+
         shorten_url = botan.shorten_url(
             str(telegram_user_id) + trailer_url,
             settings.BOTAN_TOKEN,
@@ -145,15 +149,16 @@ def display_movie_info(movie_id, telegram_user_id=None,
             'sign_genre': settings.SIGN_GENRE,
             'genres': ', '.join(
                 [a.get().name.encode('utf-8') for a in film.genres]
-            ).decode('utf-8'),
+            ).decode('utf-8') if film.genres else None,
             'sign_actor': settings.SIGN_ACTOR,
             'actors': ', '.join(
-                [a.get().name.encode('utf-8') for a in actors]
-            ).decode('utf-8'),
+                [a.get().name.encode('utf-8') for a in actors if a.get()]
+            ).decode('utf-8') if actors else None,
 
             'directors': ', '.join(
-                [a.get().name.encode('utf-8') for a in film.directors]
-            ).decode('utf-8'),
+                [a.get().name.encode('utf-8')
+                 for a in film.directors if a.get()]
+            ).decode('utf-8') if film.directors else None,
             'sign_producer': settings.SIGN_PRODUCER,
         }), markup, movie_poster
 

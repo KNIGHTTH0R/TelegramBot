@@ -81,57 +81,23 @@ def get_genres(genre_id):
     return chain(genres, genres_soon)
 
 
-def request_retry(schedules, url, count):
-
-    if count > 5:
-        return schedules
-
+def get_url_json(url):
     try:
         with contextlib.closing(urllib2.urlopen(url)) as jf:
-            schedules += json.loads(jf.read())
-        return schedules
-    except (urllib2.URLError, urllib2.HTTPError):
-        time.sleep(20)
-
-        count += 1
-        return request_retry(schedules, url)
-
+            return json.loads(jf.read())
     except Exception as e:
+        import logging
         logging.debug(e.message)
 
 
-def get_schedule(film_id, date=None):
+def get_schedule(film_id, date, city_id=1):
+    date = (datetime.now().strftime('%d%m%Y')
+            if not date
+            else date.strftime('%d%m%Y'))
 
-    date = datetime.now().strftime('%d%m%Y') if not date else date
-    cities = get_list_of_cities()
-
-    schedules = []
-    for city in cities:
-
-        url = settings.URL_FULL_SEANCES_CITY.format(
-            film_id, settings.KINOHOD_API_KEY, date, city.get('id')
-        )
-
-        schedules = request_retry(schedules, url, count=0)
-        time.sleep(seconds=10)
-
-    return schedules if len(schedules) > 0 else None
-
-
-def _get_data(url):
-    with contextlib.closing(urllib2.urlopen(url)) as jf:
-        return json.loads(jf.read())
-
-
-def detect_city_id_by_location(location):
-    url = settings.URL_CITY_ID_BY_LOC.format(
-        settings.URL_CITIES,
-        settings.KINOHOD_API_KEY,
-        location.get('latitude'), location.get('longitude')
+    url = settings.URL_FULL_SEANCES_CITY.format(
+        film_id, settings.KINOHOD_API_KEY, date, city_id
     )
 
-    data = _get_data(url)
-    if data and 'id' in data[0]:
-        return int(data[0]['id'])
+    return get_url_json(url)
 
-    return 1  # Id for Moscow

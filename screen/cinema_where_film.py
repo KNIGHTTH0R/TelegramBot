@@ -1,40 +1,42 @@
 # coding: utf-8
-import contextlib
+
 import json
-import urllib2
 
 from telepot.namedtuple import InlineKeyboardMarkup
 
+from model.cinema import Cinema
+from personolized_data import detect_film_cinemas
+
+
 import settings
-from data import detect_city_id_by_location
-from model.base import get_model, UserProfile
 
 
 def cinemas_where_film(film, number_to_display=None,
                        to_show=settings.CINEMAS_TO_DISPLAY,
                        chat_id=None):
-    city_id = 1
-    if chat_id:
-        u = get_model(UserProfile, chat_id)
-        l = json.loads(u.location)
-        city_id = detect_city_id_by_location(l)
+
+    film_cinemas, city_id = detect_film_cinemas(
+        chat_id=chat_id,
+        movie_id=film.kinohod_id,
+        date=None
+    )
 
     cinemas = []
-    for i, p in enumerate(film.cinemas):
+    for i, p in enumerate(film_cinemas):
 
         if number_to_display and to_show and i < (number_to_display - to_show):
             continue
 
-        cinema = p.get()
-        if cinema.city != city_id:
+        cinema = p['cinema']
+        if cinema.get('city') != city_id:
             continue
 
         cinemas.append(
             settings.RowCinema(
-                cinema.shortTitle,
-                cinema.address,
-                cinema.mall,
-                '/c{}m{}'.format(cinema.kinohod_id, film.kinohod_id)
+                cinema.get('shortTitle'),
+                cinema.get('address'),
+                cinema.get('mall'),
+                '/c{}m{}'.format(cinema.get('id'), film.kinohod_id)
             )
         )
 
