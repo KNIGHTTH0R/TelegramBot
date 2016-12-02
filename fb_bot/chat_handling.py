@@ -6,7 +6,7 @@ from google.appengine.api import mail
 from google.appengine.ext import deferred
 
 import settings
-from data import detect_city_id_by_location
+from personolized_data import detect_city_id_by_location
 
 from fb_bot.cinema_seances import display_cinema_seances_short
 from fb_bot.cinema_seances import display_cinema_seances

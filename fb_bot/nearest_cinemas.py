@@ -2,7 +2,7 @@
 import json
 from datetime import datetime, timedelta
 import settings
-from data import detect_city_id_by_location
+from personolized_data import detect_city_id_by_location
 from fb_bot.cinema_seances import get_data
 from fb_bot.fb_api_wrapper import construct_message_with_attachment
 from fb_bot.fb_api_wrapper import construct_message_with_text
