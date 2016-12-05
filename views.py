@@ -145,8 +145,11 @@ class CommandReceiveView(webapp2.RequestHandler):
 
             message_id = payload['message']['message_id']
             if 'location' in payload['message']:
-                update_location(payload['message']['location'],
-                                bot, chat_id, instructions)
+                try:
+                    update_location(payload['message']['location'],
+                                    bot, chat_id, instructions)
+                except Exception as e:
+                    return
 
         if 'callback_query' in payload:
             cmd = payload['callback_query']['data']
@@ -156,75 +159,74 @@ class CommandReceiveView(webapp2.RequestHandler):
         elif cmd is None:
             return
 
-        # try:
-        profile = get_model(UserProfile, chat_id)
-        cmd = cmd.lower()
-        func_detected_flag = False
-        support_send = [
-            settings.NO_AGAIN.decode('utf-8').lower(),
-            settings.NO_MAIL_SENDED.decode('utf-8').lower(),
-            settings.ANOTHER_PAY_ER.decode('utf-8').lower()
-        ]
+        try:
+            profile = get_model(UserProfile, chat_id)
+            cmd = cmd.lower()
+            func_detected_flag = False
+            support_send = [
+                settings.NO_AGAIN.decode('utf-8').lower(),
+                settings.NO_MAIL_SENDED.decode('utf-8').lower(),
+                settings.ANOTHER_PAY_ER.decode('utf-8').lower()
+            ]
 
-        if (cmd.startswith('/') or
-                (profile and profile.cmd and
-                 (profile.cmd.startswith('/') or
-                  (profile.cmd in support_send)))):
+            if (cmd.startswith('/') or
+                    (profile and profile.cmd and
+                     (profile.cmd.startswith('/') or
+                      (profile.cmd in support_send)))):
 
-            func = detect_instruction(instructions, cmd)
-            if func:
-                func(bot, payload, cmd, chat_id)
-                func_detected_flag = True
-                track(tuid, '{} called'.format(func.__name__), func.__name__)
-
-            else:
-                cb_fn = detect_cb(callback_instruction(), profile)
-                if cb_fn:
+                func = detect_instruction(instructions, cmd)
+                if func:
+                    func(bot, payload, cmd, chat_id)
                     func_detected_flag = True
-                    cb_fn(tuid, bot, chat_id, profile.cmd, cmd, profile)
+                    track(tuid, '{} called'.format(func.__name__), func.__name__)
 
-        if not func_detected_flag:
-            Schema = namedtuple('Schema', ['reply', 'markup'])
-            city_id = detect_city_by_chat(chat_id)
+                else:
+                    cb_fn = detect_cb(callback_instruction(), profile)
+                    if cb_fn:
+                        func_detected_flag = True
+                        cb_fn(tuid, bot, chat_id, profile.cmd, cmd, profile)
 
-            s = {
-                'base': Schema(display_afisha, start_markup),
-                # 'films': Schema(display_films, start_markup),
-                # 'cinema': Schema(display_cinemas, start_markup)
-            }
-            profile_state = 'base'
+            if not func_detected_flag:
+                Schema = namedtuple('Schema', ['reply', 'markup'])
+                city_id = detect_city_by_chat(chat_id)
 
+                s = {
+                    'base': Schema(display_afisha, start_markup),
+                    # 'films': Schema(display_films, start_markup),
+                    # 'cinema': Schema(display_cinemas, start_markup)
+                }
+                profile_state = 'base'
 
-            if support_generation(cmd, bot, chat_id, message_id):
-                track(tuid=tuid,
-                      message=format(s[profile_state].reply.__name__),
-                      name='support')
+                if support_generation(cmd, bot, chat_id, message_id):
+                    track(tuid=tuid,
+                          message=format(s[profile_state].reply.__name__),
+                          name='support')
 
-            elif detect_premiers(cmd.encode('utf-8'), bot, payload, chat_id):
-                track(tuid=tuid,
-                      message=cmd.encode('utf-8'),
-                      name=detect_premiers.__name__)
+                elif detect_premiers(cmd.encode('utf-8'), bot, payload, chat_id):
+                    track(tuid=tuid,
+                          message=cmd.encode('utf-8'),
+                          name=detect_premiers.__name__)
 
-            elif s[profile_state].reply(cmd.encode('utf-8'),
-                                        bot, chat_id, tuid, city_id):
-                track(tuid=tuid,
-                      message=format(s[profile_state].reply.__name__),
-                      name='parsing')
+                elif s[profile_state].reply(cmd.encode('utf-8'),
+                                            bot, chat_id, tuid, city_id):
+                    track(tuid=tuid,
+                          message=format(s[profile_state].reply.__name__),
+                          name='parsing')
 
-            else:
-                if not is_group:
+                else:
+                    if not is_group:
 
-                    bot.sendMessage(
-                        chat_id,
-                        settings.DONT_UNDERSTAND,
-                        parse_mode='Markdown',
-                        reply_markup=s[profile_state].markup()
-                    )
+                        bot.sendMessage(
+                            chat_id,
+                            settings.DONT_UNDERSTAND,
+                            parse_mode='Markdown',
+                            reply_markup=s[profile_state].markup()
+                        )
 
-                    track(tuid, 'miss understanding', 'invalid')
+                        track(tuid, 'miss understanding', 'invalid')
 
-        deferred.defer(set_model, UserProfile, chat_id,
-                       cmd=cmd, chat_id=int(chat_id))
-        # except Exception as ex:
-        #    return
-        # raise endpoints.BadRequestException(ex.message)
+            deferred.defer(set_model, UserProfile, chat_id,
+                           cmd=cmd, chat_id=int(chat_id))
+        except Exception as ex:
+            # raise endpoints.BadRequestException(ex.message)
+            return

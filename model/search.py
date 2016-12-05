@@ -177,9 +177,11 @@ class ModelSearch(object):
 
         _text = '~{}'.format(' OR ~'.join(_pre))
         texts_search = prepare_fs(['metro', 'address', 'shortTitle', 'mall'])
-        condition_text = 'city: ({1})'
-        query_text = '({}) AND ({})'.format(texts_search, condition_text)
-        query_s = query_text.format(_text, city)
+        # condition_text = 'city: ({1})'
+        # query_text = '({}) AND ({})'.format(texts_search, condition_text)
+        query_text = '({})'.format(texts_search)
+        # query_s = query_text.format(_text, city)
+        query_s = query_text.format(_text)
 
         query_options = search.QueryOptions(limit=limit)
         try:

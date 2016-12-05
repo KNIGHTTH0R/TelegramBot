@@ -83,23 +83,25 @@ def display_afisha(request, bot, chat_id, tuid, city_id):
                     if w.premiereDateRussia and w.premiereDateRussia > time:
                         continue
 
-                    w_cinemas = get_schedule(
-                        int(w.kinohod_id), date=time, city_id=int(city_id)
-                    )
-
-                    w_cinemas_ids = [k['cinema']['id'] for k in w_cinemas]
-                    if (p.kinohod_id not in w_cinemas_ids and
-                            w.premiereDateRussia < now):
-
-                        if p.shortTitle not in no_display:
-                            no_display[p.shortTitle] = [(w, p)]
-                        else:
-                            no_display[p.shortTitle].append((w, p))
-                        continue
-
                     if send_reply(bot, chat_id, detect_cinema_seances,
                                   int(p.kinohod_id), int(w.kinohod_id), time):
                         flag = True
+
+                    if not flag:
+                        w_cinemas = get_schedule(
+                            int(w.kinohod_id), date=time, city_id=int(city_id)
+                        )
+
+                        w_cinemas_ids = [k['cinema']['id'] for k in w_cinemas]
+
+                        if (p.kinohod_id not in w_cinemas_ids and
+                                w.premiereDateRussia < now):
+
+                            if p.shortTitle not in no_display:
+                                no_display[p.shortTitle] = [(w, p)]
+                            else:
+                                no_display[p.shortTitle].append((w, p))
+                            continue
 
             display_film_no_any_seances(bot, chat_id, no_display)
 

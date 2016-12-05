@@ -76,7 +76,10 @@ def get_nearest_cinemas(bot, chat_id, number_of_cinemas,
         film_cinemas = get_schedule(movie_id, date=None, city_id=city_id)
 
         # poor place because of double getter
-        film_cinema_ids = [fc['cinema']['id'] for fc in film_cinemas]
+        if film_cinemas:
+            film_cinema_ids = [fc['cinema']['id'] for fc in film_cinemas]
+        else:
+            continue
 
         if film and cinema_id:
             if cinema_id not in film_cinema_ids:
