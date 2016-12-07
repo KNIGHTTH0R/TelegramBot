@@ -5,7 +5,7 @@ import itertools
 from datetime import datetime, timedelta
 
 from maching import damerau_levenshtein_distance
-from mapping import stop_words, when_nearest, when_week, when_month
+from mapping import stop_words, when_nearest_tuple, when_week, when_month
 from data import get_data
 from parse_data import Data
 from settings import MORPH, de_uncd
@@ -244,10 +244,10 @@ class ParserAPI(object):
             return _next_month_r
 
         text = text.encode('utf-8')
-        for ws, k in when_nearest.iteritems():
-            for w in ws:
+        for k in when_nearest_tuple:
+            for w in k[0]:
                 if text.find(w) > -1:
-                    return n + timedelta(days=k)
+                    return n + timedelta(days=k[1])
 
         for k, ws in when_week.iteritems():
             for w in ws:

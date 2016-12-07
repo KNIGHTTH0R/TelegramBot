@@ -6,7 +6,7 @@ import itertools
 from datetime import datetime, timedelta
 
 from fb_bot.helper_methods import get_by_recipient_id
-from mapping import (stop_words, when_nearest, when_week,
+from mapping import (stop_words, when_week, when_nearest_tuple,
                      when_month, genre_mapping)
 
 from maching import damerau_levenshtein_distance
@@ -238,10 +238,10 @@ class Parser(object):
             return _next_month_r
 
         text = text.encode('utf-8')
-        for ws, k in when_nearest.iteritems():
-            for w in ws:
+        for k in when_nearest_tuple:
+            for w in k[0]:
                 if text.find(w) > -1:
-                    return n + timedelta(days=k)
+                    return n + timedelta(days=k[1])
 
         for k, ws in when_week.iteritems():
             for w in ws:
