@@ -54,6 +54,13 @@ def get_nearest_cinemas(bot, chat_id, number_of_cinemas,
 
     cinemas = []
     template = settings.JINJA_ENVIRONMENT.get_template('cinema_where_film.md')
+
+    film_cinemas = get_schedule(movie_id, date=None, city_id=city_id)
+    if film_cinemas:
+        film_cinema_ids = [str(fc['cinema']['id']) for fc in film_cinemas]
+    else:
+        return settings.DONT_UNDERSTAND, None
+
     right_border = number_of_cinemas
     for film_counter in xrange(number_of_cinemas - settings.CINEMA_TO_SHOW,
                                right_border):
@@ -73,14 +80,8 @@ def get_nearest_cinemas(bot, chat_id, number_of_cinemas,
         cinema_title = cinema.get('shortTitle')
 
         # poor place because of long request
-        film_cinemas = get_schedule(movie_id, date=None, city_id=city_id)
 
         # poor place because of double getter
-        if film_cinemas:
-            film_cinema_ids = [fc['cinema']['id'] for fc in film_cinemas]
-        else:
-            continue
-
         if film and cinema_id:
             if cinema_id not in film_cinema_ids:
                 continue
